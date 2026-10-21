@@ -119,6 +119,30 @@ check(st.trace.some((s) => s.label.includes('search_portfolio("InvoiceChaser app
 check(tokens.length === 4 && st.answer === "He pauses for approval." && st.sources.some((s) => s.href.includes("invoicechaser")), `answer tokens stream live (${tokens.length}) and the final answer is cleaned and cited`);
 check(liveSteps[0] === "think" && liveSteps.includes("tool") && liveSteps.at(-1) === "done", "trace steps are emitted as they happen");
 
+// An answer that cites nothing gets no source links, even if the search returned chunks
+// (regression: "can I get his resume?" retrieved InvoiceChaser's "runs resume" text and linked it).
+let nr = 0;
+const noCite: typeof fetch = async () => {
+  nr++;
+  const message = nr === 1
+    ? { role: "assistant", content: null, tool_calls: [{ id: "r1", type: "function", function: { name: "search_portfolio", arguments: JSON.stringify({ query: "resume" }) } }] }
+    : { role: "assistant", content: "The portfolio does not contain a downloadable resume. Please email chiranjeevwork@gmail.com." };
+  return new Response(JSON.stringify({ choices: [{ message }] }), { status: 200 });
+};
+const rr = await runAgent("can i get his resume?", [], "test-key", noCite);
+check(rr.sources.length === 0 && !rr.grounded, `"not covered" answer shows no sources and isn't marked grounded (sources: ${rr.sources.map((s) => s.title).join(", ") || "none"})`);
+// ...but a confident answer that forgot its citation ids still links what was retrieved.
+let nc = 0;
+const forgot: typeof fetch = async () => {
+  nc++;
+  const message = nc === 1
+    ? { role: "assistant", content: null, tool_calls: [{ id: "f1", type: "function", function: { name: "search_portfolio", arguments: JSON.stringify({ query: "InvoiceChaser human approval" }) } }] }
+    : { role: "assistant", content: "Every draft pauses for the freelancer's approval before it is sent." };
+  return new Response(JSON.stringify({ choices: [{ message }] }), { status: 200 });
+};
+const fr = await runAgent("How does InvoiceChaser keep a human in the loop?", [], "test-key", forgot);
+check(fr.sources.length > 0, `confident uncited answer still links its retrieved sources (${fr.sources.map((s) => s.title).join(", ")})`);
+
 // The search cap holds even when the model asks for several searches in one round.
 let capRound = 0;
 const greedy: typeof fetch = async () => {

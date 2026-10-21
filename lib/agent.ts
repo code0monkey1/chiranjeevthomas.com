@@ -250,12 +250,16 @@ export async function runAgent(question: string, history: Turn[], apiKey: string
       continue;
     }
     const { answer, sources } = finalize(msg.content || "", retrieved);
-    const unsure = !sources.length || /couldn.t find|not sure|doesn.t cover|isn.t covered|no information|don.t have/i.test(answer);
+    const notCovered = /couldn.t find|not sure|doesn.t cover|isn.t covered|no information|don.t have|does not (contain|include|mention|cover)|not available/i.test(answer);
     add({ kind: "done", label: `Answer grounded in ${sources.length} source${sources.length === 1 ? "" : "s"} · written in ${ms(t0)}`, detail: sources.map((s) => s.title).join(", ") || "—" });
     if (!sources.length && retrieved.size === 0) {
       return { answer: answer || "I’m not sure about that one — please email Chiranjeev at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "live" };
     }
-    return { answer, sources: dedupeSources(sources.length ? sources : Array.from(retrieved.values()).slice(0, 2)), trace, grounded: !unsure, mode: "live" };
+    // Link what the answer cited. A confident answer that forgot its citations (the smaller fallback model
+    // often does) still shows the top results; an answer saying "not covered" shows none, because the search
+    // can match the right word with the wrong meaning ("resume" a paused agent run).
+    const shown = sources.length ? sources : notCovered ? [] : Array.from(retrieved.values()).slice(0, 2);
+    return { answer, sources: dedupeSources(shown), trace, grounded: shown.length > 0 && !notCovered, mode: "live" };
   }
   throw new Error("agent did not finish");
 }

@@ -1,4 +1,4 @@
-import { formatMonth, getExperience, getPosts, getProjects, getSite, getSkills } from "./content";
+import { formatMonth, getExperience, getPosts, getProjects, getSite, getSkills, resumeHref } from "./content";
 import { EMBED_MODEL, MIN_SCORE, denseSearch, syncIfChanged, vectorSearchEnabled, type DenseHit } from "./vector-store";
 
 /**
@@ -43,6 +43,7 @@ export function buildIndex(): Chunk[] {
   const site = getSite();
   const chunks: Chunk[] = [];
   chunks.push({ id: "profile", source: "profile", title: "Profile", href: "/", text: `${site.name} — ${site.jobTitle}, based in ${site.location}. ${site.description} ${site.availability}.` });
+  if (resumeHref) chunks.push({ id: "resume", source: "profile", title: "Résumé", href: resumeHref, text: `${site.name}'s résumé (resume, CV) is available to download as a PDF from this site, along with his email ${site.email}.` });
   chunks.push({ id: "miso", source: "profile", title: "Miso, his cat", href: "/", text: `${site.photo.alt}. The cat is Miso, a Ragdoll, who is also the assistant in this chat.` });
   chunks.push({ id: "contact", source: "profile", title: "Contact", href: `mailto:${site.email}`, text: `Email ${site.email}. GitHub ${site.socials.github}. LinkedIn ${site.socials.linkedin}. Based in ${site.location}, open to remote work.` });
 
