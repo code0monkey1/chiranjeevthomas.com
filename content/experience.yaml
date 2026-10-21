@@ -1,0 +1,68 @@
+# Experience, newest first. `highlights` lead with an impact tag; `ai: true` marks AI work.
+- company: Grabbit
+  role: SDE-2 · Early engineering hire
+  start: 2025-07
+  end: present
+  location: Bengaluru
+  context: Last-mile delivery platform · 14,000+ users · 44,000+ orders
+  stack: [LLMs, Elasticsearch, Spring Boot, React Native, React, AWS Lambda, DynamoDB, Redis Streams]
+  highlights:
+    - tag: AI · LLM
+      ai: true
+      title: Shipped LLM conversational search to production
+      text: natural language translated into Elasticsearch queries, so non-technical users can run complex product searches and the catalogue is far easier to discover.
+      link: /projects/grabbit-llm-search
+    - tag: B2C → B2B
+      title: Led the platform’s move from a B2C delivery app to a hybrid B2C + B2B marketplace
+      text: across the React Native app, React web portal and Spring Boot + AWS backend.
+    - tag: New revenue
+      title: Designed and launched the full merchant ecosystem
+      text: mobile app, web portal and APIs, with warehouse-scoped data isolation, onboarding independent restaurants and shops across 3 warehouses and unlocking a new B2B revenue stream.
+    - tag: −40%
+      title: Architected real-time GPS order tracking
+      text: on RESTful APIs and Redis Streams, giving customers live order status and cutting support inquiries by 40%.
+    - tag: 99%+
+      title: Built an event-driven notification pipeline
+      text: (Spring Boot, AWS Lambda, Firebase FCM, DynamoDB) with 99%+ delivery and zero blocking on order creation, eliminating missed merchant orders.
+
+- company: DevReferral (ReferFee)
+  role: Founding Software Engineer
+  start: 2019-03
+  end: 2025-07
+  location: Bengaluru
+  context: Career platform helping developers upskill, connect and get referred to top tech companies
+  stack: [React, Next.js, Node.js, TypeScript, Microservices, CI/CD, TDD]
+  highlights:
+    - tag: 0 → 1
+      title: Owned the full development cycle as the founding engineer
+      text: planning, building, debugging, shipping and maintaining, while validating customer problems, running interviews and defining product KPIs.
+    - tag: +30% users
+      title: Grew the user base 30%
+      text: through targeted A/B testing and insights from user interviews.
+    - tag: +40%
+      title: Designed and shipped 20+ end-to-end product features
+      text: with UX designers, lifting user engagement 40%.
+    - tag: −40%
+      title: Moved the platform to microservices as it scaled
+      text: improving performance and maintainability and cutting deployment times 40%.
+    - tag: −60%
+      title: Cut page load times 60%
+      text: in the React and Node.js web apps through code optimisation and asset management.
+    - tag: +50%
+      title: Built and ran the CI/CD pipeline
+      text: raising release frequency 50%, and introduced test-driven development across the codebase, reducing bugs 25%.
+    - tag: Mentor
+      title: Mentored junior engineers
+      text: through regular code reviews and knowledge-sharing sessions on engineering best practices.
+
+- company: dDriven
+  role: Software Engineer Intern · Platform team
+  start: 2019-01
+  end: 2019-03
+  summary: Industry 4.0 data platform for manufacturers. Designed a Spring Boot microservice that adds computational expressions dynamically for timely data processing, built its backend API to a Swagger spec, and set up Jenkins CI on GitHub.
+
+- company: Beacon Innovation Group
+  role: Android Developer Intern · Backend
+  start: 2016-10
+  end: 2017-04
+  summary: Patent search and drafting firm. Built the backend logic and REST API for querying patents in an Android patent-analysis app.

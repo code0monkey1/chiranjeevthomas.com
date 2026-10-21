@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="466" viewBox="0 0 960 466" role="img" aria-label="Animated diagram of Miso's retrieval pipeline: content is chunked and synced to Pinecone at build time; each question runs meaning and keyword search, fused, then answered by the Groq agent.">
+<title>Animated diagram of Miso's retrieval pipeline: content is chunked and synced to Pinecone at build time; each question runs meaning and keyword search, fused, then answered by the Groq agent.</title>
+<rect x="0.5" y="0.5" width="959" height="465" rx="16" fill="#FFFFFF" stroke="#E7E5E4"/>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#D6D3D1"/></marker></defs>
+<text x="30" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="#1C1917" text-anchor="start" >How Miso answers a question</text>
+<text x="30" y="62" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#57534E" text-anchor="start" >Build time prepares the vectors; request time searches them by meaning and by keyword, then the LLM answers only from what came back.</text>
+<text x="30" y="96" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" fill="#A0522D" text-anchor="start" >BUILD TIME · on every deploy</text>
+<text x="30" y="232" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" fill="#A0522D" text-anchor="start" >REQUEST TIME · on every question</text>
+<g>
+<rect x="30" y="108" width="180" height="66" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.0050;0.0200;0.1300;0.1600;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.0050;0.0200;0.1300;0.1600;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="120.0" y="137.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >content/</text>
+<text x="120.0" y="156.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >.md · .yaml files</text>
+</g>
+<g>
+<rect x="255" y="108" width="200" height="66" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.0850;0.1000;0.2100;0.2400;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.0850;0.1000;0.2100;0.2400;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="355.0" y="137.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >buildIndex()</text>
+<text x="355.0" y="156.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >40 chunks · 1 per ## section</text>
+</g>
+<g>
+<rect x="490" y="108" width="200" height="66" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.1650;0.1800;0.2900;0.3200;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.1650;0.1800;0.2900;0.3200;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="590.0" y="137.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >npm run sync:vectors</text>
+<text x="590.0" y="156.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >hash diff → only changed</text>
+</g>
+<g>
+<rect x="725" y="108" width="205" height="66" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.2450;0.2600;0.3700;0.4000;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.2450;0.2600;0.3700;0.4000;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="827.5" y="137.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >Pinecone index</text>
+<text x="827.5" y="156.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >llama-text-embed-v2 · 1024-d</text>
+</g>
+<path d="M 214 141 L 249 141" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 214 141 L 249 141" keyPoints="0;0;1;1" keyTimes="0.0000;0.0600;0.1200;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.0550;0.0600;0.1200;0.1250;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 459 141 L 484 141" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 459 141 L 484 141" keyPoints="0;0;1;1" keyTimes="0.0000;0.1400;0.2000;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.1350;0.1400;0.2000;0.2050;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 694 141 L 719 141" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 694 141 L 719 141" keyPoints="0;0;1;1" keyTimes="0.0000;0.2200;0.2800;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.2150;0.2200;0.2800;0.2850;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<g>
+<rect x="30" y="262" width="180" height="66" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.3450;0.3600;0.4300;0.4600;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.3450;0.3600;0.4300;0.4600;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="120.0" y="291.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >Visitor question</text>
+<text x="120.0" y="310.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >“any full-stack apps?”</text>
+</g>
+<g>
+<rect x="255" y="262" width="200" height="66" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4050;0.4200;0.5000;0.5300;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4050;0.4200;0.5000;0.5300;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="355.0" y="291.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >Groq agent</text>
+<text x="355.0" y="310.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >gpt-oss-120b · tool calls</text>
+</g>
+<g>
+<rect x="490" y="246" width="200" height="50" rx="10" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4850;0.5000;0.5900;0.6200;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4850;0.5000;0.5900;0.6200;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="590.0" y="267.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >Meaning search</text>
+<text x="590.0" y="286.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >Pinecone · cosine ≥ 0.15</text>
+</g>
+<g>
+<rect x="490" y="306" width="200" height="50" rx="10" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4850;0.5000;0.5900;0.6200;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4850;0.5000;0.5900;0.6200;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="590.0" y="327.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >Keyword search</text>
+<text x="590.0" y="346.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >BM25 · stems + synonyms</text>
+</g>
+<g>
+<rect x="725" y="262" width="205" height="66" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.5750;0.5900;0.6700;0.7000;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.5750;0.5900;0.6700;0.7000;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="827.5" y="291.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >Rank fusion</text>
+<text x="827.5" y="310.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >RRF · top 4 chunks</text>
+</g>
+<g>
+<rect x="255" y="386" width="200" height="58" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">
+<animate attributeName="stroke" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.7550;0.7700;0.9600;0.9900;1.0000" values="#E7E5E4;#E7E5E4;#E8955A;#E8955A;#E7E5E4;#E7E5E4"/>
+<animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.7550;0.7700;0.9600;0.9900;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
+</rect>
+<text x="355.0" y="411.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >Grounded answer</text>
+<text x="355.0" y="430.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >cites retrieved ids only</text>
+</g>
+<path d="M 214 295 L 249 295" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 214 295 L 249 295" keyPoints="0;0;1;1" keyTimes="0.0000;0.3800;0.4400;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.3750;0.3800;0.4400;0.4450;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 459 288 L 484 271" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 459 288 L 484 271" keyPoints="0;0;1;1" keyTimes="0.0000;0.4900;0.5400;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4850;0.4900;0.5400;0.5450;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 459 302 L 484 331" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 459 302 L 484 331" keyPoints="0;0;1;1" keyTimes="0.0000;0.4900;0.5400;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4850;0.4900;0.5400;0.5450;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 694 271 L 719 288" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 694 271 L 719 288" keyPoints="0;0;1;1" keyTimes="0.0000;0.5800;0.6300;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.5750;0.5800;0.6300;0.6350;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 694 331 L 719 302" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 694 331 L 719 302" keyPoints="0;0;1;1" keyTimes="0.0000;0.5800;0.6300;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.5750;0.5800;0.6300;0.6350;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 827 332 C 827 372, 520 372, 400 334" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 827 332 C 827 372, 520 372, 400 334" keyPoints="0;0;1;1" keyTimes="0.0000;0.6600;0.7500;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.6550;0.6600;0.7500;0.7550;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 355 332 L 355 380" fill="none" stroke="#D6D3D1" stroke-width="2" marker-end="url(#ah)"/>
+<circle r="5" fill="#E8955A" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 355 332 L 355 380" keyPoints="0;0;1;1" keyTimes="0.0000;0.7500;0.7900;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.7450;0.7500;0.7900;0.7950;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<path d="M 827 178 L 827 212 L 640 212 L 640 240" fill="none" stroke="#D6D3D1" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#ah)"/>
+<circle r="4" fill="#F4A460" opacity="0">
+<animateMotion dur="10s" repeatCount="indefinite" path="M 827 178 L 827 212 L 640 212 L 640 240" keyPoints="0;0;1;1" keyTimes="0.0000;0.5000;0.5600;1.0000" calcMode="linear"/>
+<animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.4950;0.5000;0.5600;0.5650;1.0000" values="0;0;1;1;0;0"/>
+</circle>
+<text x="700" y="236" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" font-weight="400" fill="#57534E" text-anchor="start" >Pinecone embeds the question too</text>
+<text x="612" y="362" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="400" fill="#57534E" text-anchor="middle" dy="20">tool result: chunk ids + text</text>
+<text x="495" y="418" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#57534E" text-anchor="start" >If Pinecone is missing or down, keyword search answers alone.</text>
+<text x="495" y="436" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#57534E" text-anchor="start" >Up to 3 searches per question; the agent can scope one to a single project.</text>
+</svg>

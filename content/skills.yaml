@@ -1,0 +1,71 @@
+# Skills shown in the animated Skills section. kind: ai | fullstack.
+# Each item: name, used (where you've used it), link (optional evidence page).
+- title: Agents & orchestration
+  kind: ai
+  items:
+    - { name: LangGraph, used: "Typed agent state, Command updates and a checkpointer per invoice thread, so paused runs resume cleanly.", link: /projects/invoicechaser }
+    - { name: LangChain, used: "Agent runtime and middleware in InvoiceChaser; retrieval tooling in the agentic RAG assistant.", link: /projects/invoicechaser }
+    - { name: ReAct loops, used: "Reason → call a tool → observe → repeat, with the model choosing the next tool each turn.", link: /projects/invoicechaser }
+    - { name: Tool / function calling, used: "8 agent tools in InvoiceChaser; retrieval exposed as a tool the model decides to call.", link: /projects/invoicechaser }
+    - { name: Dynamic tool gating, used: "Middleware filters which tools the model can see at each escalation level.", link: /projects/invoicechaser }
+    - { name: Human-in-the-loop, used: "Every draft pauses for approve, edit or reject before anything is sent.", link: /projects/invoicechaser }
+    - { name: MCP servers, used: "A FastMCP server exposes invoice data as tools, so real accounting systems can be swapped in.", link: /projects/invoicechaser }
+- title: LLMs & prompting
+  kind: ai
+  items:
+    - { name: LLM product features, used: "Natural-language search turned into Elasticsearch queries, shipped to real users at Grabbit.", link: /projects/grabbit-llm-search }
+    - { name: Prompt engineering, used: "Dynamic prompts that change tone by escalation level; grounded, cite-your-sources prompts for RAG.", link: /projects/invoicechaser }
+    - { name: Structured output, used: "LLM output turned into structured Elasticsearch queries and typed agent state.", link: /projects/grabbit-llm-search }
+    - { name: Groq · Llama 3.3 70B, used: "Fast, low-cost inference behind InvoiceChaser, the RAG assistant and this site’s chat.", link: /projects/agentic-rag }
+    - { name: Guardrails, used: "Least-privilege tools, approval gates and grounded-only answers.", link: /projects/invoicechaser }
+- title: Retrieval & RAG
+  kind: ai
+  items:
+    - { name: Agentic RAG, used: "The model decides when to retrieve instead of searching on every message.", link: /projects/agentic-rag }
+    - { name: Pinecone, used: "Serverless index with integrated llama-text-embed-v2 embeddings.", link: /projects/agentic-rag }
+    - { name: Reranking, used: "Retrieve 6, rerank with bge-reranker-v2-m3, keep the best 3.", link: /projects/agentic-rag }
+    - { name: Chunking & embeddings, used: "Recursive splitting at 500 characters with 100 overlap.", link: /projects/agentic-rag }
+    - { name: Elasticsearch, used: "Product search that the LLM query layer sits on at Grabbit.", link: /projects/grabbit-llm-search }
+    - { name: Web search (Tavily), used: "InvoiceChaser researches small-claims procedures at the legal escalation level.", link: /projects/invoicechaser }
+- title: Evals & observability
+  kind: ai
+  items:
+    - { name: Agent tracing, used: "Adding per-step traces to InvoiceChaser runs — in progress.", link: /projects/agent-observability }
+    - { name: Golden-set evals, used: "Checking tone and tool choice per escalation level before prompt changes ship — in progress.", link: /projects/agent-observability }
+- title: Frontend & mobile
+  kind: fullstack
+  items:
+    - { name: React, used: "React 19 agent dashboard with a human-approval card; React web portals at Grabbit and DevReferral.", link: /projects/invoicechaser }
+    - { name: React Native, used: "Customer and merchant mobile apps at Grabbit.", link: "/#experience" }
+    - { name: Next.js, used: "Product web app at DevReferral, and this website.", link: "/#experience" }
+    - { name: TypeScript, used: "Front ends and Node services across projects, including this site." }
+    - { name: Tailwind CSS, used: "InvoiceChaser UI with Tailwind v4 and Vite.", link: /projects/invoicechaser }
+    - { name: Web performance, used: "Cut page load times 60% at DevReferral.", link: "/#experience" }
+- title: Backend & APIs
+  kind: fullstack
+  items:
+    - { name: Java, used: "Backend services at Grabbit and earlier at dDriven.", link: "/#experience" }
+    - { name: Kotlin, used: "Part of the JVM backend stack." }
+    - { name: Spring Boot, used: "REST services and the merchant platform backend at Grabbit.", link: "/#experience" }
+    - { name: Python · FastAPI, used: "The API around the InvoiceChaser agent: chat, create, resume.", link: /projects/invoicechaser }
+    - { name: Node.js · Express, used: "RAG ingest and chat API; services at DevReferral.", link: /projects/agentic-rag }
+    - { name: REST API design, used: "Swagger-spec APIs, merchant APIs and agent endpoints.", link: "/#experience" }
+- title: Data & messaging
+  kind: fullstack
+  items:
+    - { name: PostgreSQL, used: "Relational data for backend services." }
+    - { name: DynamoDB, used: "Event store in the Grabbit notification pipeline.", link: "/#experience" }
+    - { name: Redis Streams, used: "Real-time GPS order tracking that cut support inquiries 40%.", link: "/#experience" }
+    - { name: MongoDB, used: "Data layer for DevReferral’s Node apps." }
+    - { name: Event-driven design, used: "Async notifications with 99%+ delivery and zero blocking on order creation.", link: "/#experience" }
+- title: Cloud, DevOps & practice
+  kind: fullstack
+  items:
+    - { name: AWS Lambda, used: "Serverless notification pipeline at Grabbit.", link: "/#experience" }
+    - { name: Firebase FCM, used: "Push notifications to merchants with 99%+ delivery.", link: "/#experience" }
+    - { name: Docker, used: "Containerised services and local environments." }
+    - { name: CI/CD, used: "Raised release frequency 50% at DevReferral; Jenkins CI at dDriven.", link: "/#experience" }
+    - { name: Microservices, used: "Migrated DevReferral to microservices, cutting deploy time 40%.", link: "/#experience" }
+    - { name: System design, used: "B2C → B2B marketplace with warehouse-scoped data isolation.", link: "/#experience" }
+    - { name: TDD & clean architecture, used: "Test-driven across DevReferral, cutting bugs 25%.", link: "/#experience" }
+    - { name: A/B testing, used: "Grew DevReferral users 30% through experiments.", link: "/#experience" }

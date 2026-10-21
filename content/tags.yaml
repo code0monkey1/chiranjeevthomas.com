@@ -1,0 +1,35 @@
+# The only tags projects and posts may use. The build fails on an unknown tag,
+# so near-duplicates ("Agent", "agent", "AI agents") can't creep in.
+# `type: true` marks the tags that appear as the main filter tabs.
+ai-engineering:
+  label: AI engineering
+  type: true
+  description: Agentic AI, LLM features, retrieval and evaluation work.
+full-stack:
+  label: Full-stack
+  type: true
+  description: Products built end to end across frontend, backend and infrastructure.
+agents:
+  label: Agents
+  description: Tool-calling agents built with LangChain and LangGraph.
+rag:
+  label: RAG
+  description: Retrieval-augmented generation and search.
+human-in-the-loop:
+  label: Human-in-the-loop
+  description: Agents that pause for a person to approve, edit or reject.
+mcp:
+  label: MCP
+  description: Model Context Protocol servers and tools.
+llm:
+  label: LLM features
+  description: Large language model features in production products.
+search:
+  label: Search
+  description: Search and retrieval systems.
+observability:
+  label: Observability & evals
+  description: Tracing and evaluation of LLM and agent systems.
+langgraph:
+  label: LangGraph
+  description: Stateful agents built with LangGraph.

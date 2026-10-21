@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Send the bare domain and the Netlify subdomain to the canonical www host.
+[[redirects]]
+  from = "https://chiranjeevthomas.com/*"
+  to = "https://www.chiranjeevthomas.com/:splat"
+  status = 301
+  force = true

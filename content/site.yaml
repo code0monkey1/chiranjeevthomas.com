@@ -1,0 +1,46 @@
+# Site-wide facts. Used by the layout, SEO tags, structured data and the chat agent.
+name: Chiranjeev Thomas
+url: https://www.chiranjeevthomas.com
+jobTitle: Senior Full-Stack Engineer, Agentic AI
+title: Chiranjeev Thomas — Senior Full-Stack Engineer, Agentic AI Applications
+description: >-
+  Senior full-stack engineer with 7+ years building products end to end. I ship LLM features
+  to real users and build tool-calling agents with LangChain and LangGraph, RAG pipelines,
+  MCP servers and human-in-the-loop safeguards.
+intro: >-
+  Senior full-stack engineer, 7+ years. I ship LLM features to real users (conversational
+  search at Grabbit) and build tool-calling agents with LangChain and LangGraph, Python and
+  Node middleware, and human-in-the-loop safeguards.
+location: Bengaluru, India
+email: chiranjeevwork@gmail.com
+availability: Open to new roles
+photo:
+  src: /media/me-and-miso.webp
+  alt: Chiranjeev Thomas with his Ragdoll cat resting on his shoulder
+  width: 691
+  height: 619
+rotatingWords:
+  - agentic applications
+  - tool-calling agents
+  - RAG pipelines
+  - LLM features
+  - AI-powered products
+socials:
+  github: https://github.com/code0monkey1
+  linkedin: https://www.linkedin.com/in/chiranjeevthomas/
+  medium: https://medium.com/@chiranjeevthomas
+knowsAbout:
+  - Agentic AI
+  - LangGraph
+  - LangChain
+  - Retrieval-augmented generation
+  - Model Context Protocol
+  - LLM applications
+  - React
+  - Next.js
+  - TypeScript
+  - Python
+  - FastAPI
+  - Java
+  - Spring Boot
+  - AWS
