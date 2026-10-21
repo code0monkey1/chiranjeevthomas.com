@@ -4,6 +4,7 @@ import { ProjectGrid } from "@/components/ProjectGrid";
 import type { CardProject } from "@/components/ProjectCard";
 import { SkillsShowcase } from "@/components/SkillsShowcase";
 import { Experience } from "@/components/Experience";
+import { Contact } from "@/components/Contact";
 
 export default function Home() {
   const projects: CardProject[] = getProjects().map((p) => ({
@@ -16,12 +17,14 @@ export default function Home() {
       <section id="work" className="section alt" aria-labelledby="work-title">
         <div className="wrap"><ProjectGrid projects={projects} /></div>
       </section>
-      <section id="skills" className="section" aria-labelledby="skills-title">
-        <div className="wrap"><SkillsShowcase groups={skills} /></div>
-      </section>
-      <section id="experience" className="section alt" aria-labelledby="exp-title">
+      {/* Recruiters weigh experience before the skills list, so it comes first. */}
+      <section id="experience" className="section" aria-labelledby="exp-title">
         <div className="wrap"><Experience /></div>
       </section>
+      <section id="skills" className="section alt" aria-labelledby="skills-title">
+        <div className="wrap"><SkillsShowcase groups={skills} /></div>
+      </section>
+      <Contact />
     </>
   );
 }

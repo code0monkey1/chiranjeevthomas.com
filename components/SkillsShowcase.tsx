@@ -11,7 +11,6 @@ export function SkillsShowcase({ groups }: { groups: SkillGroup[] }) {
   const [sel, setSel] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const count = (k: string) => groups.filter((g) => k === "all" || g.kind === k).reduce((n, g) => n + g.items.length, 0);
-  const names = (k: "ai" | "fullstack") => groups.filter((g) => g.kind === k).flatMap((g) => g.items.map((i) => i.name));
   const selected = groups.flatMap((g) => g.items.map((i) => ({ ...i, kind: g.kind }))).find((i) => i.name === sel);
   let idx = 0;
 
@@ -31,28 +30,14 @@ export function SkillsShowcase({ groups }: { groups: SkillGroup[] }) {
         </div>
       </div>
 
-      <div className="marquee" aria-hidden="true">
-        {(["ai", "fullstack"] as const).map((k) => (
-          <div className="mq-row" key={k}>
-            <div className={`mq-track ${k === "ai" ? "mq-left" : "mq-right"}`}>
-              {[...names(k), ...names(k)].map((n, i) => (
-                <span key={i} className={`mq-chip ${k === "ai" ? "ai" : "fs"}`}><span className={`dot ${k === "ai" ? "ai" : "fs"}`} />{n}</span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
       <div className={`skill-detail${selected ? " on" : ""}`} role="status" aria-live="polite">
-        {selected ? (
+        {selected && (
           <div className="inner">
             <strong style={{ fontSize: 18 }}>{selected.name}</strong>
             <span className={KIND_BADGE[selected.kind]}>{KIND_LABEL[selected.kind]}</span>
             <span style={{ flex: "1 1 320px", fontSize: 15, lineHeight: 1.55, color: "var(--ink-3)" }}>{selected.used}</span>
-            {selected.link && <Link href={selected.link} className="btn primary">See it →</Link>}
+            {selected.link && <Link href={selected.link} className="btn primary">See the project</Link>}
           </div>
-        ) : (
-          <span style={{ fontSize: 15, color: "var(--muted)" }}>Tip: click a skill below — a sandy dot means AI engineering, a black dot full-stack.</span>
         )}
       </div>
 

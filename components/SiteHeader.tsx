@@ -3,8 +3,8 @@ import { site } from "@/lib/content";
 
 const links = [
   { href: "/#work", label: "Projects" },
-  { href: "/#skills", label: "Skills" },
   { href: "/#experience", label: "Experience" },
+  { href: "/#skills", label: "Skills" },
   { href: "/blog", label: "Writing" },
 ];
 

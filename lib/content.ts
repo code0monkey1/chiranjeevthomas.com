@@ -32,6 +32,9 @@ const fresh = <T>(load: () => T) => {
 export const getSite = fresh(() => SiteSchema.parse(yaml.load(read("site.yaml"))));
 export const site: Site = getSite();
 
+/** Drop a résumé at public/resume.pdf and the hero and contact section link to it. */
+export const resumeHref = fs.existsSync(path.join(process.cwd(), "public", "resume.pdf")) ? "/resume.pdf" : null;
+
 /* ---------- tags ---------- */
 const TagSchema = z.object({ label: z.string(), description: z.string(), type: z.boolean().optional() });
 export type Tag = z.infer<typeof TagSchema> & { slug: string };

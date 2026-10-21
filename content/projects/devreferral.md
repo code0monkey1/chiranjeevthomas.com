@@ -12,8 +12,7 @@ types: [full-stack]
 tags: []
 stack: [React, Next.js, Node.js, Express, MongoDB, TypeScript]
 links:
-  howNote: coming soon
-  demo: https://www.devreferral.com
+  demoNote: no longer online
   githubNote: private
 ---
 

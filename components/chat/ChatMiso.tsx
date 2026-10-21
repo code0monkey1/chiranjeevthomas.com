@@ -74,6 +74,8 @@ export function ChatMiso() {
   const [trace, setTrace] = useState<Step[]>([]);
   const [elapsed, setElapsed] = useState("");
   const [firstWords, setFirstWords] = useState("");
+  // On narrow screens the trace sits under the chat, so it starts collapsed there.
+  const [showTrace, setShowTrace] = useState(false);
   const [mode, setMode] = useState<"checking" | "live" | "demo">("checking");
   const [mood, setMood] = useState<Mood>("idle");
   const [wish, setWish] = useState(0);
@@ -190,6 +192,8 @@ export function ChatMiso() {
     ask(draft);
   };
 
+  const atRest = msgs.length === 1;
+
   return (
     <div className={`chat${busy ? " busy" : ""}`} role="region" aria-label="Psst. Ask me about my human." aria-busy={busy}>
       {busy && (
@@ -237,7 +241,7 @@ export function ChatMiso() {
 
       <div className="chat-body">
         <div className="chat-main">
-          <div ref={logRef} className="chat-log" role="log" aria-live="polite" aria-label="Conversation">
+          <div ref={logRef} className={`chat-log${atRest ? " at-rest" : ""}`} role="log" aria-live="polite" aria-label="Conversation">
             {msgs.map((m, i) => (
               <div key={i} className={`msg ${m.role}`}>
                 {m.role === "bot" && <span className="mini-cat" aria-hidden="true"><RagdollCat still size={30} /></span>}
@@ -252,11 +256,20 @@ export function ChatMiso() {
                 </div>
               </div>
             ))}
+            {/* Before the first question, the suggestions fill the empty log instead of a blank box. */}
+            {atRest && (
+              <div className="starters" role="group" aria-label="Suggested questions">
+                <span className="starters-label">Try asking</span>
+                {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => ask(s)}>{s}</button>)}
+              </div>
+            )}
           </div>
           <div className="chat-input">
-            <div className="suggest" role="group" aria-label="Suggested questions">
-              {SUGGESTIONS.map((s) => <button key={s} type="button" disabled={busy} onClick={() => ask(s)}>{s}</button>)}
-            </div>
+            {!atRest && (
+              <div className="suggest" role="group" aria-label="Suggested questions">
+                {SUGGESTIONS.map((s) => <button key={s} type="button" disabled={busy} onClick={() => ask(s)}>{s}</button>)}
+              </div>
+            )}
             <form className="chat-form" onSubmit={onSubmit}>
               <label htmlFor="ask-box" className="sr-only">Ask a question about Chiranjeev’s work</label>
               <input id="ask-box" value={draft} onChange={(e) => { setDraft(e.target.value); if (!busy) setMood(e.target.value ? "listening" : "idle"); }} placeholder="Ask about his AI projects, experience or stack…" autoComplete="off" maxLength={400} />
@@ -264,7 +277,10 @@ export function ChatMiso() {
             </form>
           </div>
         </div>
-        <aside className="trace" aria-label="Agent trace">
+        <aside className={`trace${showTrace ? " open" : ""}`} aria-label="Agent trace">
+          <button type="button" className="trace-toggle" aria-expanded={showTrace} onClick={() => setShowTrace((v) => !v)}>
+            {showTrace ? "Hide agent trace" : `Show agent trace${trace.length ? ` (${trace.length} steps)` : ""}`}
+          </button>
           <div className="trace-head"><b>AGENT TRACE</b><span>{busy ? (firstWords ? `first words ${firstWords} · writing…` : "running…") : elapsed ? `${firstWords ? `first words ${firstWords} · ` : ""}done in ${elapsed}` : ""}</span></div>
           {trace.length === 0 ? (
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--muted)" }}>Ask something. You’ll see the agent decide whether to search, which query it runs over my projects and experience, what it retrieves, and the sources behind the answer.</p>

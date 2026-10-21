@@ -8,6 +8,8 @@ const match = (p: CardProject, key: string) => (key === "all" ? true : key === "
 export function ProjectGrid({ projects }: { projects: CardProject[] }) {
   const [tab, setTab] = useState("all");
   const shown = projects.filter((p) => match(p, tab));
+  // Pick a layout that never leaves an empty slot: 5 → one wide feature card + a row of 3; 4 or 2 → two columns.
+  const layout = shown.length === 5 ? "featured" : shown.length % 2 === 0 || shown.length === 1 ? "two" : "three";
   return (
     <>
       <div className="section-head">
@@ -23,8 +25,8 @@ export function ProjectGrid({ projects }: { projects: CardProject[] }) {
           ))}
         </div>
       </div>
-      <div className="project-grid">
-        {shown.map((p) => <ProjectCard key={p.slug} p={p} />)}
+      <div className={`project-grid ${layout}`}>
+        {shown.map((p, i) => <ProjectCard key={p.slug} p={p} wide={layout === "featured" && i === 0} />)}
       </div>
     </>
   );
