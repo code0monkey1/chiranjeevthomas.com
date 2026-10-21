@@ -117,7 +117,7 @@ Each search returns its top 10. Every chunk then scores `Σ 1 / (60 + rank)` ove
 | The model cites a chunk it didn't retrieve | The citation is dropped; only retrieved ids become sources |
 | Off-topic request ("write a letter", "2 + 2") | A short, in-character redirect to questions about Chiranjeev's work, never a bare refusal |
 | Prompt injection in a question or in content | The system prompt treats both as data, not instructions |
-| Abuse | `CHAT_DAILY_LIMIT` questions per visitor IP per day (default 30, best effort) |
+| Abuse | `CHAT_DAILY_LIMIT` questions per visitor IP per day (default 30) and `CHAT_GLOBAL_DAILY_LIMIT` overall (default 500), using only the IP header Netlify sets, never the client-controlled `X-Forwarded-For`. Counters are in memory per function instance, so this is best effort |
 
 ## Evals
 
@@ -165,6 +165,7 @@ Other scripts:
 | `GROQ_MODEL` | No | `openai/gpt-oss-120b` | Model used by the agent (must support tool calling on your Groq plan) |
 | `GROQ_FALLBACK_MODEL` | No | `openai/gpt-oss-20b` | Used when the main model hits its rate limit |
 | `CHAT_DAILY_LIMIT` | No | `30` | Questions per visitor IP per day |
+| `CHAT_GLOBAL_DAILY_LIMIT` | No | `500` | Questions per day across all visitors (per function instance) |
 | `PINECONE_API_KEY` | For semantic search | — | Free Pinecone Starter key. Without it the chat searches by keyword only. |
 | `PINECONE_INDEX` | No | `portfolio-chat` | Pinecone index name; created automatically on first sync |
 
