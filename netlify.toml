@@ -5,6 +5,11 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Netlify's Next.js adapter: turns the build into pages, server functions (the chat API) and routing.
+# Declared explicitly so it also runs for API/CLI uploads, not only Git-linked builds.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 # Send the bare domain and the Netlify subdomain to the canonical www host.
 [[redirects]]
   from = "https://chiranjeevthomas.com/*"
