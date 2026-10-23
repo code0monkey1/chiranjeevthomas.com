@@ -226,11 +226,11 @@ export function ChatMiso({ onClose }: { onClose?: () => void } = {}) {
             <span className="cat-bob" role="img" aria-label={`Miso is ${MOOD_TEXT[mood]}`} style={{ position: "absolute", inset: 0 }}>
               <RagdollCat mood={mood} />
             </span>
-            {mood === "thinking" && <span className="cat-badge" style={{ top: -6, right: -12, padding: "3px 7px", borderRadius: 999, background: "#fff", border: "1px solid var(--line)" }}><span className="dots"><span /><span /><span /></span></span>}
+            {mood === "thinking" && <span className="cat-badge" style={{ top: -6, right: -12, padding: "3px 7px", borderRadius: 999, background: "var(--surface)", border: "1px solid var(--line)" }}><span className="dots"><span /><span /><span /></span></span>}
             {mood === "cry" && <span className="cat-badge" style={{ top: -8, right: -8, width: 22, height: 22, borderRadius: "50%", background: "#DCEEFF", border: "1.5px solid #5FA8E8", display: "grid", placeItems: "center" }}><svg width="11" height="13" viewBox="0 0 12 16"><path d="M6 0 C3 5 0 8 0 11 a6 6 0 0 0 12 0 C12 8 9 5 6 0Z" fill="#5FA8E8" /></svg></span>}
-            {mood === "laugh" && <span className="cat-badge mono" style={{ top: -10, right: -16, padding: "2px 6px", borderRadius: 999, background: "var(--ink)", color: "#fff", fontSize: 10, fontWeight: 700 }}>HA HA</span>}
+            {mood === "laugh" && <span className="cat-badge mono" style={{ top: -10, right: -16, padding: "2px 6px", borderRadius: 999, background: "var(--ink)", color: "var(--on-ink)", fontSize: 10, fontWeight: 700 }}>HA HA</span>}
             {mood === "smirk" && <span className="cat-badge mono" style={{ top: -10, right: -12, padding: "2px 6px", borderRadius: 999, background: "var(--sand-soft)", border: "1px solid var(--sand-2)", color: "var(--sienna)", fontSize: 10, fontWeight: 700 }}>heh</span>}
-            {mood === "confused" && <span className="cat-badge" style={{ top: -8, right: -6, width: 20, height: 20, borderRadius: "50%", background: "var(--ink)", color: "#fff", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700 }}>?</span>}
+            {mood === "confused" && <span className="cat-badge" style={{ top: -8, right: -6, width: 20, height: 20, borderRadius: "50%", background: "var(--ink)", color: "var(--on-ink)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700 }}>?</span>}
             {(mood === "happy" || mood === "smile") && <span className="cat-badge" style={{ top: -8, right: -8, color: mood === "happy" ? "#E9735A" : "#F4A460" }}><svg className="twinkle" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.2 0 3.7 1.2 4.6 2.6.9-1.4 2.4-2.6 4.6-2.6 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z" /></svg></span>}
           </span>
           <span style={{ minWidth: 0 }}>

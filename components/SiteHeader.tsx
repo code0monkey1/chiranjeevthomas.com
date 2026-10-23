@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { resumeHref, site } from "@/lib/content";
 import { NavLinks } from "./NavLinks";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function SiteHeader() {
   return (
@@ -10,7 +11,10 @@ export function SiteHeader() {
           <span aria-hidden="true" className="brand-badge">ct</span>
           {site.name}
         </Link>
-        <NavLinks resumeHref={resumeHref} />
+        <div className="nav-end">
+          <NavLinks resumeHref={resumeHref} />
+          <ThemeToggle />
+        </div>
       </nav>
     </header>
   );
