@@ -49,8 +49,8 @@ export function ProjectCard({ p, wide = false }: { p: CardProject; wide?: boolea
         </ul>
         <div className="project-actions">
           {how && <Link href={how} className="btn primary">How it works</Link>}
-          {p.links.demo && <a href={p.links.demo} className="btn" target="_blank" rel="noopener">Live demo</a>}
-          {p.links.github && <a href={p.links.github} className="btn" target="_blank" rel="noopener">GitHub</a>}
+          {p.links.demo && <a href={p.links.demo} className="btn" target="_blank" rel="noopener">Live demo<span className="sr-only"> (opens in new tab)</span></a>}
+          {p.links.github && <a href={p.links.github} className="btn" target="_blank" rel="noopener">GitHub<span className="sr-only"> (opens in new tab)</span></a>}
         </div>
         {notes.length > 0 && <p className="project-note">{notes.join(" · ")}</p>}
       </div>

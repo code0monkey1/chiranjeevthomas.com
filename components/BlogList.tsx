@@ -18,9 +18,11 @@ export function BlogList({ posts }: { posts: ListPost[] }) {
       <div className="chips" role="group" aria-label="Filter posts" style={{ margin: "28px 0 12px" }}>
         {FILTERS.map((x) => {
           const n = x.id === "all" ? posts.length : posts.filter((p) => p.tags.includes(x.id)).length;
+          // An empty filter only leads to "No posts here yet", so leave it out.
+          if (!n) return null;
           return (
             <button key={x.id} type="button" className="chip-btn" aria-pressed={f === x.id} onClick={() => setF(x.id)}>
-              {x.label} <span style={{ opacity: 0.6 }}>{n}</span>
+              {x.label} ({n})
             </button>
           );
         })}

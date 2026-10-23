@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { RagdollCat, MOOD_TEXT, type Mood } from "./RagdollCat";
 import { ChaseLoader } from "./ChaseLoader";
-import { ResetIcon } from "../Icons";
+import { CloseIcon, ResetIcon } from "../Icons";
 
 type Source = { title: string; href: string };
 type Msg = { role: "user" | "bot"; text: string; sources?: Source[]; pending?: boolean; streaming?: boolean };
@@ -67,7 +67,8 @@ function emotion(q: string): Mood | null {
   return null;
 }
 
-export function ChatMiso() {
+/** `onClose` adds a close button, for when the chat is shown in a dialog. */
+export function ChatMiso({ onClose }: { onClose?: () => void } = {}) {
   const [msgs, setMsgs] = useState<Msg[]>([{ role: "bot", text: INTRO }]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -87,11 +88,13 @@ export function ChatMiso() {
   useEffect(() => {
     fetch("/api/chat").then((r) => r.json()).then((d) => setMode(d.live ? "live" : "demo")).catch(() => setMode("demo"));
   }, []);
+  // JS smooth scrolling isn't covered by the CSS reduced-motion rule.
+  const scrollBehavior = (): ScrollBehavior => (window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: scrollBehavior() });
   }, [msgs]);
   useEffect(() => {
-    traceRef.current?.scrollTo({ top: traceRef.current.scrollHeight, behavior: "smooth" });
+    traceRef.current?.scrollTo({ top: traceRef.current.scrollHeight, behavior: scrollBehavior() });
   }, [trace]);
 
   const settle = (m: Mood, ms = 4500) => {
@@ -195,7 +198,7 @@ export function ChatMiso() {
   const atRest = msgs.length === 1;
 
   return (
-    <div className={`chat${busy ? " busy" : ""}`} role="region" aria-label="Psst. Ask me about my human." aria-busy={busy}>
+    <div className={`chat${busy ? " busy" : ""}`} role="region" aria-label="Ask Miso, an AI assistant that answers questions about Chiranjeev's work" aria-busy={busy}>
       {busy && (
         <span aria-hidden="true">
           <div className="busy-glow" />
@@ -237,20 +240,21 @@ export function ChatMiso() {
         </div>
         <span className={`mode-pill ${mode === "live" ? "live" : "demo"}`}>{mode === "live" ? "● Live" : mode === "demo" ? "Retrieval only" : "Connecting…"}</span>
         <button type="button" className="icon-btn" onClick={reset} aria-label="Start a new chat"><ResetIcon /></button>
+        {onClose && <button type="button" className="icon-btn" onClick={onClose} aria-label="Close chat"><CloseIcon /></button>}
       </div>
 
       <div className="chat-body">
         <div className="chat-main">
           <div ref={logRef} className={`chat-log${atRest ? " at-rest" : ""}`} role="log" aria-live="polite" aria-label="Conversation">
             {msgs.map((m, i) => (
-              <div key={i} className={`msg ${m.role}`}>
+              <div key={i} className={`msg ${m.role}`} aria-busy={m.streaming || undefined}>
                 {m.role === "bot" && <span className="mini-cat" aria-hidden="true"><RagdollCat still size={30} /></span>}
                 <div className={`bubble${m.pending && !m.streaming ? " pending" : ""}`}>
                   {m.pending && !m.streaming ? <ChaseLoader mood={mood} /> : m.text}
                   {m.streaming && <span className="caret" aria-hidden="true" />}
                   {m.sources && m.sources.length > 0 && (
                     <span className="sources">
-                      {m.sources.map((s) => <a key={s.href + s.title} href={s.href}>↗ {s.title}</a>)}
+                      {m.sources.map((s) => <a key={s.href + s.title} href={s.href}><span aria-hidden="true">↗ </span>{s.title}</a>)}
                     </span>
                   )}
                 </div>
@@ -260,7 +264,8 @@ export function ChatMiso() {
             {atRest && (
               <div className="starters" role="group" aria-label="Suggested questions">
                 <span className="starters-label">Try asking</span>
-                {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => ask(s)}>{s}</button>)}
+                {/* These buttons unmount once asked, so hand focus to the input instead of dropping it on <body>. */}
+                {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => { ask(s); document.getElementById("ask-box")?.focus(); }}>{s}</button>)}
               </div>
             )}
           </div>

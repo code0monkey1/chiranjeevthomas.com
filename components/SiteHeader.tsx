@@ -1,12 +1,6 @@
 import Link from "next/link";
-import { site } from "@/lib/content";
-
-const links = [
-  { href: "/#work", label: "Projects" },
-  { href: "/#experience", label: "Experience" },
-  { href: "/#skills", label: "Skills" },
-  { href: "/blog", label: "Writing" },
-];
+import { resumeHref, site } from "@/lib/content";
+import { NavLinks } from "./NavLinks";
 
 export function SiteHeader() {
   return (
@@ -16,11 +10,7 @@ export function SiteHeader() {
           <span aria-hidden="true" className="brand-badge">ct</span>
           {site.name}
         </Link>
-        <div className="nav-links">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href}>{l.label}</Link>
-          ))}
-        </div>
+        <NavLinks resumeHref={resumeHref} />
       </nav>
     </header>
   );

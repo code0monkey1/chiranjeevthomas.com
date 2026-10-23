@@ -1,42 +1,77 @@
 import Image from "next/image";
-import { resumeHref, site } from "@/lib/content";
+import Link from "next/link";
+import { getProjects, site } from "@/lib/content";
 import { RotatingWord } from "./RotatingWord";
+import { CopyEmail } from "./CopyEmail";
 import { GitHubIcon, LinkedInIcon, MailIcon } from "./Icons";
-import { ChatMiso } from "./chat/ChatMiso";
+import { MisoLauncher } from "./chat/MisoLauncher";
+
+/** "a, b and c" for the screen-reader version of the rotating line. */
+const listOf = (words: string[]) => (words.length < 2 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`);
 
 export function Hero() {
-  const longest = site.rotatingWords.reduce((a, b) => (b.length > a.length ? b : a));
+  const words = site.rotatingWords;
+  const longest = words.reduce((a, b) => (b.length > a.length ? b : a));
+  // The first AI case studies double as evidence links under the intro.
+  const work = getProjects().filter((p) => p.caseStudy && p.types.includes("ai-engineering")).slice(0, 3);
   return (
     <section className="hero" aria-labelledby="hero-title">
-      <div className="grid-bg" aria-hidden="true" />
       <div className="hero-inner">
-        <figure className="hero-photo">
-          <div className="glow" aria-hidden="true" />
-          <div className="frame">
-            <Image src={site.photo.src} alt={site.photo.alt} width={site.photo.width} height={site.photo.height} priority sizes="(max-width: 640px) 112px, (max-width: 960px) 200px, 400px" />
-          </div>
-        </figure>
-        <div className="hero-text">
-          <div className="eyebrow rise">
-            <span className="live-dot" aria-hidden="true" />
-            Senior Full-Stack Engineer · Agentic AI · {site.location.split(",")[0]} · {site.availability}
-          </div>
-          {/* The hidden copy holds the longest phrase, so the headline's height never jumps as the words rotate. */}
-          <h1 id="hero-title" className="hero-title rise" style={{ animationDelay: ".08s" }}>
-            <span className="ht-sizer" aria-hidden="true">I build <span className="hl">{longest}</span> end to end.</span>
-            <span className="ht-live">I build <RotatingWord words={site.rotatingWords} /> end to end.</span>
+        {/* Photo beside the name on desktop; on phones the photo sits beside the status, above the name. */}
+        <div className="hero-id">
+          <h1 id="hero-title" className="hero-title">
+            <span className="hero-name">{site.name}</span>
+            <span className="hero-role">Senior full-stack engineer building agentic AI</span>
           </h1>
-          <p className="intro rise" style={{ animationDelay: ".16s" }}>{site.intro}</p>
-          <div className="cta-row rise" style={{ animationDelay: ".24s" }}>
-            <a className="btn primary lg" href={`mailto:${site.email}`}><MailIcon />Email me</a>
-            {resumeHref && <a className="btn lg" href={resumeHref} download>Download résumé</a>}
-            <span className="social">
+          <p className="hero-status">
+            <span>{site.location.split(",")[0]}</span>
+            <span className="hs-sep" aria-hidden="true">·</span>
+            <strong><span className="live-dot" aria-hidden="true" />{site.availability}</strong>
+          </p>
+          <figure className="hero-photo">
+            <Image src={site.photo.src} alt={site.photo.alt} width={site.photo.width} height={site.photo.height} priority sizes="(max-width: 640px) 80px, 170px" />
+          </figure>
+        </div>
+        <div className="hero-band">
+          <div className="hero-body">
+            <p className="intro">{site.intro}</p>
+            {work.length > 0 && (
+              <p className="hero-work">
+                Selected work:{" "}
+                {work.map((p, i) => (
+                  <span key={p.slug}>
+                    {i > 0 && <span aria-hidden="true"> · </span>}
+                    <Link href={`/projects/${p.slug}`}>{p.title}</Link>
+                  </span>
+                ))}
+              </p>
+            )}
+            {/* The hidden longest word reserves the width, so the sentence never reflows while the words change. */}
+            <p className="hero-rotate">
+              <span aria-hidden="true">
+                I build{" "}
+                <span className="rot">
+                  <span className="hl rot-sizer">{longest}</span>
+                  <RotatingWord words={words} />
+                </span>{" "}
+                end to end.
+              </span>
+              <span className="sr-only">I build {listOf(words)} end to end.</span>
+            </p>
+          </div>
+          <div className="hero-contact">
+            <div className="cta-row">
+              <a className="btn primary lg" href={`mailto:${site.email}`}><MailIcon />Email me</a>
+              <CopyEmail email={site.email} />
+            </div>
+            <span className="hero-email mono">{site.email}</span>
+            <div className="hero-links">
               <a href={site.socials.github}><GitHubIcon />GitHub</a>
               <a href={site.socials.linkedin}><LinkedInIcon />LinkedIn</a>
-            </span>
+            </div>
           </div>
         </div>
-        <ChatMiso />
+        <MisoLauncher />
       </div>
     </section>
   );

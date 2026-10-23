@@ -15,3 +15,15 @@ export const PlayIcon = () => (
 export const ResetIcon = () => (
   <svg {...base}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
 );
+export const CopyIcon = () => (
+  <svg {...base}><rect x="8" y="8" width="14" height="14" rx="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
+);
+export const CheckIcon = () => (
+  <svg {...base}><path d="M20 6 9 17l-5-5" /></svg>
+);
+export const MenuIcon = () => (
+  <svg {...base}><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+);
+export const CloseIcon = () => (
+  <svg {...base}><path d="M18 6 6 18M6 6l12 12" /></svg>
+);

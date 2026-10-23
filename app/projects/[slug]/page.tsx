@@ -43,8 +43,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         </ul>
         <h1>{p.headline}</h1>
         <div className="chips">
-          {p.links.demo && <a className="btn lg primary" href={p.links.demo} target="_blank" rel="noopener">Try the live demo</a>}
-          {p.links.github && <a className="btn lg" href={p.links.github} target="_blank" rel="noopener">View the code</a>}
+          {p.links.demo && <a className="btn lg primary" href={p.links.demo} target="_blank" rel="noopener">Try the live demo<span className="sr-only"> (opens in new tab)</span></a>}
+          {p.links.github && <a className="btn lg" href={p.links.github} target="_blank" rel="noopener">View the code<span className="sr-only"> (opens in new tab)</span></a>}
         </div>
         <ul className="tech-list" aria-label="Tech stack">{p.stack.map((s) => <li key={s} className="tech">{s}</li>)}</ul>
       </header>

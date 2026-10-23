@@ -25,6 +25,7 @@ export function ProjectGrid({ projects }: { projects: CardProject[] }) {
           ))}
         </div>
       </div>
+      <p className="sr-only" aria-live="polite">Showing {shown.length} {shown.length === 1 ? "project" : "projects"}</p>
       <div className={`project-grid ${layout}`}>
         {shown.map((p, i) => <ProjectCard key={p.slug} p={p} wide={layout === "featured" && i === 0} />)}
       </div>

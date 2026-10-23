@@ -10,7 +10,7 @@ export function Contact() {
           <h2 id="contact-title">Hiring for an AI engineering role?</h2>
           <p>
             I’m a senior full-stack engineer who ships LLM features to production, and I’m {site.availability.toLowerCase()}.
-            Email me, or ask Miso at the top of the page anything about my work first.
+            Email me, or <a href="#ask-miso">ask Miso</a> anything about my work first.
           </p>
         </div>
         <div className="cta-row">

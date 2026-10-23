@@ -37,8 +37,9 @@ function useLookOnce(delay = 700, hold = 1100) {
 export function ChaseLoader({ mood }: { mood: Mood }) {
   const { label, secs } = useStatus(mood);
   const looking = useLookOnce();
+  // No live region here: the chat log around it already announces the status line.
   return (
-    <div className={`chase${looking ? " looking" : ""}`} role="status" aria-live="polite">
+    <div className={`chase${looking ? " looking" : ""}`}>
       <svg className="chase-track" viewBox="0 -22 360 96" aria-hidden="true">
         <line className="chase-ground" x1="0" y1="66" x2="360" y2="66" />
         <g className="chase-pair">
@@ -125,7 +126,7 @@ export function ChaseLoader({ mood }: { mood: Mood }) {
       </svg>
       <p className="chase-label">
         {looking ? "Miso glances at you…" : label}
-        <span className="chase-time">{secs.toFixed(1)}s</span>
+        <span className="chase-time" aria-hidden="true">{secs.toFixed(1)}s</span>
       </p>
     </div>
   );

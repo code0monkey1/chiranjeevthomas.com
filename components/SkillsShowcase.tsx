@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { SkillGroup } from "@/lib/content";
 
@@ -10,9 +10,14 @@ export function SkillsShowcase({ groups }: { groups: SkillGroup[] }) {
   const [tab, setTab] = useState<"all" | "ai" | "fullstack">("all");
   const [sel, setSel] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
+  const detailRef = useRef<HTMLDivElement>(null);
   const count = (k: string) => groups.filter((g) => k === "all" || g.kind === k).reduce((n, g) => n + g.items.length, 0);
   const selected = groups.flatMap((g) => g.items.map((i) => ({ ...i, kind: g.kind }))).find((i) => i.name === sel);
   let idx = 0;
+  // On phones the panel can sit screens above the tapped chip; bring it into view.
+  useEffect(() => {
+    if (sel) detailRef.current?.scrollIntoView({ block: "nearest" });
+  }, [sel]);
 
   return (
     <>
@@ -30,7 +35,7 @@ export function SkillsShowcase({ groups }: { groups: SkillGroup[] }) {
         </div>
       </div>
 
-      <div className={`skill-detail${selected ? " on" : ""}`} role="status" aria-live="polite">
+      <div ref={detailRef} className={`skill-detail${selected ? " on" : ""}`} role="status" aria-live="polite">
         {selected && (
           <div className="inner">
             <strong style={{ fontSize: 18 }}>{selected.name}</strong>
