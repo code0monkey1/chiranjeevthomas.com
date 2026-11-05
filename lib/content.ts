@@ -19,7 +19,6 @@ const SiteSchema = z.object({
   email: z.string().email(),
   availability: z.string(),
   photo: z.object({ src: z.string(), alt: z.string(), width: z.number(), height: z.number() }),
-  rotatingWords: z.array(z.string()).min(1),
   socials: z.object({ github: z.string().url(), linkedin: z.string().url(), medium: z.string().url().optional() }),
   knowsAbout: z.array(z.string()),
 });
