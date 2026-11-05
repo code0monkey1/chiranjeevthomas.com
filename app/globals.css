@@ -22,7 +22,6 @@
   --surface-tint: #fffcf9;
   --sand-line: #f6d3b5;
   --track: #f1ece6;
-  --highlight: var(--sand);
   --header-bg: rgba(255, 255, 255, 0.9);
   /* Text on near-black (ink) and on sand backgrounds. */
   --on-ink: #ffffff;
@@ -61,8 +60,6 @@
   --amber: #fbbf24;
   --amber-soft: #3a2a0b;
   --track: #2e2925;
-  /* Light text sits on the highlighter in dark mode, so it is a deeper amber there. */
-  --highlight: #8a4f22;
   --header-bg: rgba(15, 13, 12, 0.85);
   --on-ink: #0c0a09;
   --contact-bg: #1c1917;
@@ -78,7 +75,12 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Short pages keep the footer on the bottom edge rather than mid-screen. */
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
+main { flex: 1 0 auto; }
 a { color: inherit; }
 a:hover { color: var(--sienna); }
 img, video { max-width: 100%; display: block; }
@@ -94,7 +96,7 @@ button { font: inherit; color: inherit; }
 .site-header { position: sticky; top: 0; z-index: 20; background: var(--header-bg); backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--line); }
 .site-header nav { max-width: var(--max); margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 .brand { text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; }
-.brand-badge { width: 28px; height: 28px; border-radius: 7px; background: var(--sand); color: var(--on-sand); display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px; }
+.brand-badge { flex: none; width: 28px; height: 28px; border-radius: 7px; background: var(--sand); color: var(--on-sand); display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px; }
 .nav-links { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; font-size: 15px; }
 .nav-links a { text-decoration: none; padding: 12px; border-radius: 8px; }
 .nav-links a[aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; }
@@ -126,6 +128,7 @@ button { font: inherit; color: inherit; }
 .badge-product { background: var(--ink); color: var(--on-ink); border: 1px solid var(--ink); }
 .badge-tag { background: var(--bg-2); color: var(--ink-3); border: 1px solid var(--line); }
 a.badge { display: inline-flex; align-items: center; min-height: 28px; }
+li.badge { display: inline-flex; align-items: center; }
 .btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); }
 .btn.primary { background: var(--sand); border-color: var(--sand); color: var(--on-sand); }
 .btn:hover { color: var(--ink); background: var(--bg-2); }
@@ -136,53 +139,42 @@ a.badge { display: inline-flex; align-items: center; min-height: 28px; }
 .lift { transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
 .lift:hover, .lift:focus-within { transform: translateY(-4px); border-color: var(--sand) !important; box-shadow: 0 16px 40px rgba(244, 164, 96, .18); }
 
-/* ---------- hero ---------- */
-.hero-inner { max-width: var(--max); margin: 0 auto; padding: 48px 24px; }
-/* Identity row: photo on the left, name and status beside it. Phone: photo beside the status, name below. */
-.hero-id { display: grid; grid-template-columns: 170px minmax(0, 1fr); grid-template-areas: "photo ." "photo title" "photo status" "photo ."; grid-template-rows: 1fr auto auto 1fr; column-gap: 36px; }
-.hero-title { grid-area: title; margin: 0; display: flex; flex-direction: column; gap: 8px; font-weight: 600; }
-.hero-name { font-size: clamp(34px, 2.6vw + 23px, 54px); line-height: 1.02; letter-spacing: -0.035em; }
-.hero-role { font-size: clamp(23px, 0.9vw + 19px, 30px); line-height: 1.2; letter-spacing: -0.02em; font-weight: 500; color: var(--ink-3); }
-.hero-status { grid-area: status; margin: 16px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-family: var(--font-mono); font-size: 14px; color: var(--muted); }
-.hero-status strong { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; color: var(--green); }
-.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; }
-.hero-photo { grid-area: photo; margin: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--bg-3); }
-.hero-photo img { display: block; width: 100%; height: auto; aspect-ratio: 691 / 619; object-fit: cover; object-position: 50% 30%; }
-/* Information band: intro on the left, ways to reach me on the right. */
-.hero-band { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 620px) minmax(0, 1fr); gap: 24px 64px; }
-.hero-body { display: flex; flex-direction: column; gap: 14px; }
-.hero .intro { margin: 0; font-size: 18px; line-height: 1.6; color: var(--ink-3); }
-.hero-work { margin: 0; font-size: 15px; line-height: 1.6; color: var(--muted); }
-.hero-work a { color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--sand); text-decoration-thickness: 2px; text-underline-offset: 4px; }
-.hero-work a:hover { color: var(--sienna); }
-.hero-rotate { margin: 0; font-size: 17px; line-height: 1.5; color: var(--ink-2); }
-/* The invisible longest phrase and the live one share one grid cell, so the width never changes. */
-.rot { display: inline-grid; vertical-align: bottom; }
-.rot > span { grid-area: 1 / 1; justify-self: start; }
-.rot-sizer { visibility: hidden; }
-.hl { background: linear-gradient(transparent 62%, var(--highlight) 62%); padding: 0 4px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
-.swap-in { animation: swapIn .45s cubic-bezier(.2,.7,.2,1) both; }
-.hero-contact { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .cta-row .btn svg { width: 16px; height: 16px; }
-/* Fixed width, so the label can change to "Copied" without moving anything beside it. */
-.copy-btn { cursor: pointer; min-width: 148px; justify-content: center; }
-.hero-email { font-size: 14px; color: var(--muted); user-select: all; overflow-wrap: anywhere; }
-.hero-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0 24px; font-size: 15px; color: var(--ink-3); }
-.hero-links a { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+
+/* ---------- hero ---------- */
+/* Name, intro and action on the left; the photo with the Ask Miso launcher under it on the right. */
+.hero-inner { max-width: var(--max); margin: 0 auto; padding: 72px 24px 80px; display: grid; grid-template-columns: minmax(0, 1fr) clamp(280px, 38vw, 360px); column-gap: clamp(40px, 7vw, 112px); align-items: center; }
+.hero-title { margin: 0; display: flex; flex-direction: column; gap: 12px; font-weight: 600; }
+.hero-name { font-size: clamp(32px, 2.6vw + 23px, 60px); line-height: 1.02; letter-spacing: -0.035em; }
+.hero-role { font-size: clamp(22px, 0.9vw + 19px, 30px); line-height: 1.2; letter-spacing: -0.02em; font-weight: 500; color: var(--ink-3); }
+.hero-status { margin: 20px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; font-family: var(--font-mono); font-size: 14px; color: var(--muted); }
+.hero-status strong { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; color: var(--green); }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; }
+.hero-body { margin-top: 36px; }
+.hero .intro { margin: 0; max-width: 56ch; font-size: 18px; line-height: 1.6; color: var(--ink-3); }
+.hero-actions { margin-top: 32px; display: flex; align-items: center; gap: 4px; }
+.hero-actions .btn { margin-right: 12px; }
+.hero-actions .btn svg { width: 16px; height: 16px; }
+.hero-link { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 8px; color: var(--muted); }
+.hero-link:hover { background: var(--bg-2); color: var(--ink); }
+.hero-aside { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+/* The source oval is cut flat at its left and right edges, so this clip rounds them. At 50% tall it would cut into the hair; 51% clears it. */
+/* White behind the cutout's transparent corners keeps the photo's own white background in both themes. */
+.hero-photo { margin: 0; background: #fff; clip-path: ellipse(50% 51% at 50% 50%); }
+.hero-photo img { width: 100%; height: auto; }
 /* The hero already ends with breathing room, so Projects can start a little higher. */
 .hero + .section { padding-top: 56px; }
 
 /* Ask Miso: one bar in the hero; the full chat opens in a modal dialog over the page. */
-.miso-launch { margin-top: 32px; }
 .miso-launcher { cursor: pointer; width: 100%; min-height: 72px; display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-tint); text-align: left; transition: border-color .2s; }
 .miso-launcher:hover { border-color: var(--sand); }
 .miso-launcher-cat { flex: 0 0 40px; display: grid; place-items: center; }
 .miso-launcher-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .miso-launcher-text strong { font-size: 17px; font-weight: 600; }
 .miso-launcher-text span { font-size: 15px; line-height: 1.4; color: var(--muted); }
-.miso-launcher-go { flex: 0 0 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--sand); color: var(--on-sand); font-size: 18px; transition: transform .2s; }
-.miso-launcher:hover .miso-launcher-go { transform: translate(2px, -2px); }
+.miso-launcher-go { flex: 0 0 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-2); color: var(--ink-2); font-size: 18px; transition: transform .2s, background-color .2s, border-color .2s; }
+.miso-launcher:hover .miso-launcher-go { transform: translate(2px, -2px); background: var(--sand); border-color: var(--sand); color: var(--on-sand); }
 .miso-dialog { width: min(1080px, calc(100% - 48px)); max-width: none; max-height: calc(100dvh - 48px); margin: auto; padding: 0; border: 0; border-radius: 20px; background: transparent; overflow: auto; overscroll-behavior: contain; }
 .miso-dialog::backdrop { background: rgba(12, 10, 9, .45); }
 .miso-dialog[open] { animation: pop .3s cubic-bezier(.2,.7,.2,1) both; }
@@ -190,21 +182,21 @@ a.badge { display: inline-flex; align-items: center; min-height: 28px; }
 /* The page behind the dialog keeps its scroll position and does not scroll underneath. */
 html.dialog-open { overflow: hidden; }
 
-@media (max-width: 960px) { .hero-band { grid-template-columns: minmax(0, 1fr); } }
+/* The launcher column is narrow here, and the arrow is decoration. */
+@media (min-width: 641px) and (max-width: 960px) { .miso-launcher-go { display: none; } }
 @media (max-width: 640px) {
-  .hero-inner { padding: 24px 16px 40px; }
-  .hero-id { grid-template-columns: 80px minmax(0, 1fr); grid-template-areas: "photo status" "title title"; grid-template-rows: auto; column-gap: 16px; }
-  .hero-status { margin: 0; align-self: center; flex-direction: column; align-items: flex-start; font-size: 13px; }
-  .hero-status strong { order: -1; }
-  .hs-sep { display: none; }
-  .hero-title { margin-top: 20px; gap: 6px; }
-  .hero-band { margin-top: 20px; padding-top: 0; border-top: 0; gap: 16px; }
+  /* Name first, then the photo, then the intro and actions. The wrappers dissolve so all four can be ordered. */
+  .hero-inner { padding: 28px 16px 48px; display: flex; flex-direction: column; gap: 24px; }
+  .hero-text, .hero-aside { display: contents; }
+  .hero-head { order: 1; }
+  .hero-photo { order: 2; width: min(100%, 360px); }
+  .hero-body { order: 3; margin-top: 0; }
+  .miso-launch { order: 4; }
+  .hero-title { gap: 8px; }
+  .hero-status { margin-top: 14px; font-size: 13px; }
   .hero .intro { font-size: 16px; line-height: 1.55; }
-  .hero-rotate { font-size: 16px; }
-  .hero-contact { align-items: stretch; gap: 8px; }
-  .hero-email { font-size: 13px; }
-  .hero-links { gap: 0 20px; }
-  .miso-launch { margin-top: 24px; }
+  .hero-actions { margin-top: 20px; }
+  .hero-actions .btn { flex: 1 1 auto; justify-content: center; }
   .miso-launcher { min-height: 68px; gap: 12px; padding: 10px 14px; }
   .miso-launcher-text strong { font-size: 16px; }
   .miso-launcher-text span { font-size: 14px; }
@@ -524,7 +516,6 @@ html.dialog-open { overflow: hidden; }
 
 /* ---------- keyframes ---------- */
 @keyframes pulse { 0%,100% { opacity: .45 } 50% { opacity: 1 } }
-@keyframes swapIn { from { opacity: 0; transform: translateY(.35em) } to { opacity: 1; transform: none } }
 @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98) } to { opacity: 1; transform: none } }
 @keyframes mqL { from { transform: translateX(0) } to { transform: translateX(-50%) } }
 @keyframes mqR { from { transform: translateX(-50%) } to { transform: translateX(0) } }
@@ -584,8 +575,11 @@ html.dialog-open { overflow: hidden; }
   .pd { padding: 44px 16px 14px; gap: 9px; }
   .pd-json { font-size: 10px; }
   .cta-row .btn.lg { flex: 1 1 auto; justify-content: center; }
-  /* Email me and Copy email stay side by side instead of stacking into two full-width bars. */
-  .hero .cta-row .btn.lg { flex: 1 1 0; padding: 12px 14px; min-width: 0; }
+}
+
+/* The name is the page's first heading on the home page, and the badge and menu need this width. */
+@media (max-width: 360px) {
+  .brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -602,3 +596,6 @@ html.dialog-open { overflow: hidden; }
   .job-hl li { flex-direction: column; gap: 6px; }
   .impact { flex-basis: auto; }
 }
+
+/* Keep post summaries to a readable line length on wide screens. */
+.post-list .t > span:not(.kicker) { max-width: 68ch; }

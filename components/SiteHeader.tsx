@@ -9,7 +9,7 @@ export function SiteHeader() {
       <nav aria-label="Primary">
         <Link href="/" className="brand">
           <span aria-hidden="true" className="brand-badge">ct</span>
-          {site.name}
+          <span className="brand-name">{site.name}</span>
         </Link>
         <div className="nav-end">
           <NavLinks resumeHref={resumeHref} />

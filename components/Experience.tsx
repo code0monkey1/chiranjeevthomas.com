@@ -1,22 +1,12 @@
 import Link from "next/link";
 import { experience, formatMonth } from "@/lib/content";
 
-function span(start: string, end: string) {
-  const [sy, sm] = start.split("-").map(Number);
-  const now = new Date();
-  const [ey, em] = end === "present" ? [now.getFullYear(), now.getMonth() + 1] : end.split("-").map(Number);
-  const months = (ey - sy) * 12 + (em - sm) + 1;
-  const y = Math.floor(months / 12), m = months % 12;
-  return [y && `${y} yr${y > 1 ? "s" : ""}`, m && `${m} mo${m > 1 ? "s" : ""}`].filter(Boolean).join(" ");
-}
-
 export function Experience() {
   return (
     <>
       <div className="section-head">
         <div>
           <h2 id="exp-title">Experience</h2>
-          <p>7+ years shipping products end to end — six as a founding engineer, now an early hire scaling a delivery platform</p>
         </div>
       </div>
       <ol className="jobs">
@@ -24,7 +14,7 @@ export function Experience() {
           <li key={j.company} className={`job lift${j.highlights ? "" : " small"}`}>
             <div className="job-meta">
               <span className="mono" style={{ fontSize: 13, color: "var(--muted)" }}>
-                {formatMonth(j.start)} — {formatMonth(j.end)}{j.highlights ? ` · ${span(j.start, j.end)}` : ""}
+                {formatMonth(j.start)} — {formatMonth(j.end)}
               </span>
               <h3>{j.company}</h3>
               <p className="role">{j.role}</p>

@@ -8,8 +8,7 @@ description: >-
   to real users and build tool-calling agents with LangChain and LangGraph, RAG pipelines,
   MCP servers and human-in-the-loop safeguards.
 intro: >-
-  Senior full-stack engineer with 7+ years of experience. I build AI products that real
-  people use, from search that understands plain language to agents that get work done
+  With 7+ years of experience, I build AI products that real people use, from search that understands plain language to agents that get work done
   safely, with a human in the loop where it matters.
 location: Bengaluru, India
 email: chiranjeevwork@gmail.com
@@ -19,12 +18,6 @@ photo:
   alt: Chiranjeev Thomas with his Ragdoll cat resting on his shoulder
   width: 691
   height: 619
-rotatingWords:
-  - agentic applications
-  - tool-calling agents
-  - RAG pipelines
-  - LLM features
-  - AI-powered products
 socials:
   github: https://github.com/code0monkey1
   linkedin: https://www.linkedin.com/in/chiranjeevthomas/
