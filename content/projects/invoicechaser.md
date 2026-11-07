@@ -23,7 +23,7 @@ Freelancers lose money to invoices nobody chases. InvoiceChaser moves a dispute 
 
 ## Dynamic tool gating
 
-A `@wrap_model_call` middleware filters the tool list before every model call, and `@dynamic_prompt` swaps the tone. At Level 1 the model doesn’t even know a final-notice tool exists — it isn’t forbidden, it simply isn’t there. Pick a level to see what the model can use:
+A `@wrap_model_call` middleware filters the tool list before every model call, and `@dynamic_prompt` swaps the tone. At Level 1 the model isn’t offered a final-notice tool, and a gate refuses it if the model asks anyway: offering tools turned out to be only advice, which the [golden-set eval](/projects/agent-observability) caught. Pick a level to see what the model can use:
 
 <!-- widget:tool-gating -->
 
@@ -50,6 +50,8 @@ A `@wrap_model_call` middleware filters the tool list before every model call, a
 
 ## What I’d build next
 
-- Tracing and a golden-set eval for tone and tool choice at each level
+*Shipped since:* per-step tracing and a golden-set eval. See [Agent observability & evals](/projects/agent-observability).
+
+
 - Real email delivery (SendGrid or Resend) and PDF export of letters
 - Live QuickBooks / FreshBooks / Xero behind the MCP server
