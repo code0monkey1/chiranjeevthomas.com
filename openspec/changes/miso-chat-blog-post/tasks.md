@@ -2,7 +2,7 @@
 
 ## 1. Baseline measurements (do first, before `cache-miso-answers` reaches production)
 
-- [ ] 1.1 Create `measurements.md` in this change and record the pre-cache baseline on production: for each of the 4 suggestions, first-words and total time from the trace header (median of 5 runs), Groq rounds and searches from the trace; verify every row names its source (screenshot path or trace text) and the deploy ID it was measured on
+- [x] 1.1 Create `measurements.md` in this change and record the pre-cache baseline on production: for each of the 4 suggestions, first-words and total time from the trace header (median of 5 runs), Groq rounds and searches from the trace; verify every row names its source (screenshot path or trace text) and the deploy ID it was measured on
 - [ ] 1.2 Record the fixed facts with sources: Groq free-tier tokens/min (provider docs URL), Pinecone Starter namespace cap (docs URL), corpus chunk count and approximate tokens (`buildIndex()` output), recent `deploy_time` (Netlify deploy record); verify each has a URL, command or code line
 
 ## 2. Widgets in posts

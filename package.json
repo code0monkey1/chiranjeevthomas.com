@@ -3,15 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "npm run precompute:answers -- --skip-llm",
     "dev": "next dev",
-    "prebuild": "npm run sync:vectors",
+    "prebuild": "npm run sync:vectors && npm run precompute:answers",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "preeval:chat": "npm run precompute:answers -- --skip-llm",
     "eval:chat": "tsx scripts/eval-chat.ts",
-    "sync:vectors": "tsx scripts/sync-vectors.ts"
+    "sync:vectors": "tsx scripts/sync-vectors.ts",
+    "precompute:answers": "tsx scripts/precompute-answers.ts"
   },
   "dependencies": {
+    "@netlify/blobs": "^11.1.8",
     "@pinecone-database/pinecone": "^8.2.0",
     "geist": "^1.8.1",
     "gray-matter": "^4.0.3",

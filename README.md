@@ -107,6 +107,17 @@ Each search returns its top 10. Every chunk then scores `Σ 1 / (60 + rank)` ove
 - In `npm run dev`, edits are synced on the next chat question, no restart needed.
 - Namespaces keep environments apart: production deploys use `production`, deploy previews and branch deploys use `preview`, local runs use `local` ([lib/namespace.ts](lib/namespace.ts)).
 
+## Caching answers
+
+Every live answer costs two Groq calls and a Pinecone search (about 2 s, measured on production). Most visitors click one of the four suggestion bubbles, so those answers would otherwise be recomputed on every click.
+
+- **Suggestion bubbles are answered at build time.** After `sync:vectors`, `npm run precompute:answers` ([scripts/precompute-answers.ts](scripts/precompute-answers.ts)) runs the agent once per suggestion and writes the results to `lib/generated/answers.json`, which ships in the page. Clicking a bubble shows the answer with no request at all. A suggestion the build couldn't answer well (Groq down, the fallback model used, not grounded) is left out and answers live.
+- **Repeated first questions hit a per-deploy cache.** A question asked with no earlier turns is looked up in a Netlify Blobs store scoped to the deploy ([lib/answer-store.ts](lib/answer-store.ts)), keyed by a hash of the normalised question (case, spacing, quotes and trailing punctuation don't matter). On a miss the agent runs, and a cacheable answer is written after the response has finished (`after()`), so it never delays the visitor.
+- **Every deploy starts empty.** The store belongs to the deploy, so a new version can never serve an answer computed by older content or code, and a rollback brings back that deploy's own answers.
+- **Only trustworthy answers are cached:** live, grounded, cited, from the main model, and not a "the portfolio doesn't cover that" reply.
+- **Follow-ups are never cached,** because their answers depend on the conversation.
+- **Hits are honest and free.** The trace shows `Cache hit · build-time` or `Cache hit · runtime · Nms` before the original run's steps, and a hit doesn't count against the rate limit. Any cache error just means a live answer.
+
 ## Guardrails and failure modes
 
 | Situation | What happens |

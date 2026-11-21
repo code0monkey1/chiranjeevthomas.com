@@ -1,0 +1,27 @@
+{"q":"What has he shipped with LLMs in production?","run":1,"status":200,"firstMs":6526,"doneMs":6526,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":2}
+{"q":"How does InvoiceChaser keep a human in the loop?","run":1,"status":200,"firstMs":1937,"doneMs":2007,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"What’s his experience with RAG?","run":1,"status":200,"firstMs":2033,"doneMs":2287,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"Is he a fit for a senior full-stack AI role?","run":1,"status":200,"firstMs":1799,"doneMs":2094,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":2}
+{"q":"What has he shipped with LLMs in production?","run":2,"status":200,"firstMs":1488,"doneMs":1708,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":2}
+{"q":"How does InvoiceChaser keep a human in the loop?","run":2,"status":200,"firstMs":1685,"doneMs":1875,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"What’s his experience with RAG?","run":2,"status":200,"firstMs":1928,"doneMs":2139,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"Is he a fit for a senior full-stack AI role?","run":2,"status":200,"firstMs":1687,"doneMs":2028,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":2}
+{"q":"What has he shipped with LLMs in production?","run":3,"status":200,"firstMs":1574,"doneMs":1881,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":3}
+{"q":"How does InvoiceChaser keep a human in the loop?","run":3,"status":200,"firstMs":1761,"doneMs":2033,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"What’s his experience with RAG?","run":3,"status":200,"firstMs":1582,"doneMs":1834,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"Is he a fit for a senior full-stack AI role?","run":3,"status":200,"firstMs":1856,"doneMs":2197,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":2}
+{"q":"What has he shipped with LLMs in production?","run":4,"status":200,"firstMs":1770,"doneMs":2033,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":3}
+{"q":"How does InvoiceChaser keep a human in the loop?","run":4,"status":200,"firstMs":1427,"doneMs":1644,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"What’s his experience with RAG?","run":4,"status":200,"firstMs":1609,"doneMs":1860,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"Is he a fit for a senior full-stack AI role?","run":4,"status":200,"firstMs":1444,"doneMs":1795,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":2}
+{"q":"What has he shipped with LLMs in production?","run":5,"status":200,"firstMs":1763,"doneMs":2020,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":3}
+{"q":"How does InvoiceChaser keep a human in the loop?","run":5,"status":200,"firstMs":1952,"doneMs":2174,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"What’s his experience with RAG?","run":5,"status":200,"firstMs":1627,"doneMs":2060,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":1}
+{"q":"Is he a fit for a senior full-stack AI role?","run":5,"status":200,"firstMs":1289,"doneMs":1718,"llmRounds":2,"searches":1,"fallback":false,"mode":"live","grounded":true,"sources":2}
+
+SUMMARY (median of runs)
+{"q":"What has he shipped with LLMs in production?","n":5,"firstMs":1763,"doneMs":2020,"searches":1,"fallbacks":0}
+{"q":"How does InvoiceChaser keep a human in the loop?","n":5,"firstMs":1761,"doneMs":2007,"searches":1,"fallbacks":0}
+{"q":"What’s his experience with RAG?","n":5,"firstMs":1627,"doneMs":2060,"searches":1,"fallbacks":0}
+{"q":"Is he a fit for a senior full-stack AI role?","n":5,"firstMs":1687,"doneMs":2028,"searches":1,"fallbacks":0}
+measuredAt 2026-11-21T19:49:31.528Z

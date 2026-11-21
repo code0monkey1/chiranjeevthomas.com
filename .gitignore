@@ -7,3 +7,6 @@ out
 next-env.d.ts
 # Kombai design canvases, audits and copied assets
 .kombai/
+
+# Build output written by scripts/precompute-answers.ts
+lib/generated/

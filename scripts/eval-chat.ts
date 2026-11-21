@@ -10,8 +10,10 @@
 import { loadEnvConfig } from "@next/env";
 loadEnvConfig(process.cwd());
 import { buildIndex, fuse, keywordSearch, search } from "../lib/search-index";
-import { FALLBACK_MODEL, MAX_SEARCHES, finalize, runAgent } from "../lib/agent";
+import { FALLBACK_MODEL, MAX_SEARCHES, MODEL, finalize, notCovered, runAgent } from "../lib/agent";
 import { denseSearch, syncRecords, vectorSearchEnabled, type VectorNamespace } from "../lib/vector-store";
+import { cachedTrace, normalizeQuestion } from "../lib/answer-cache";
+import { answerStore, isCacheable, questionKey, setAnswerStore } from "../lib/answer-store";
 
 const CASES: Array<[string, string[]]> = [
   ["How does InvoiceChaser keep a human in the loop?", ["/projects/invoicechaser"]],
@@ -83,7 +85,10 @@ check(fused.some((h) => h.id === obs.id), `chunk found only by meaning makes the
 check(fuse([[{ id: "a" }, { id: "b" }], [{ id: "b" }, { id: "c" }]], 3)[0] === "b", "chunk ranked by both lists wins");
 const failing = async () => { throw new Error("pinecone down"); };
 check((await search("Where does he work now?", 4, failing)).length > 0, "Pinecone error falls back to keyword results");
-check(!keywordSearch(SEMANTIC_CASES[0][0], 4).some((h) => h.href === obs.href), "keyword search alone misses the paraphrase (why embeddings are needed)");
+// The observability case study now shares words with the first paraphrase, so keyword search finds it;
+// the second paraphrase still has no word overlap with its page.
+const [noOverlapQ, [noOverlapHref]] = SEMANTIC_CASES[1];
+check(!keywordSearch(noOverlapQ, 4).some((h) => h.href.startsWith(noOverlapHref)), `keyword search alone misses "${noOverlapQ}" (why embeddings are needed)`);
 
 console.log("\nAgent loop (mocked model)");
 let call = 0;
@@ -167,6 +172,104 @@ const limited: typeof fetch = async (_url, init) => {
 };
 const rl = await runAgent("What does he do?", [], "test-key", limited);
 check(models[1] === FALLBACK_MODEL && rl.mode === "live" && rl.trace.some((s) => /Rate limit/.test(s.label)), `429 on ${models[0]} → retried on ${models[1]}`);
+// Which model answered decides whether the answer may be cached (fallback answers never are).
+check(rl.model === FALLBACK_MODEL, `result records the fallback model as the answerer (${rl.model})`);
+check(r.model === MODEL, `a run on the main model records it (${r.model})`);
+check(notCovered("I couldn’t find that in his portfolio.") && !notCovered("He built InvoiceChaser."), "notCovered spots 'not in the portfolio' answers only");
+
+console.log("\nAnswer cache");
+check(
+  ["What’s his experience with RAG?", "  what's his   EXPERIENCE with rag??", "What's his experience with RAG!"].every((q) => normalizeQuestion(q) === "what's his experience with rag"),
+  "case, spacing, curly quotes and trailing punctuation don't change the cache key",
+);
+check(normalizeQuestion("Has he used RAG?") !== normalizeQuestion("Has he used Ruby?"), "different questions stay different");
+const key = questionKey("How does InvoiceChaser keep a human in the loop?");
+check(/^q\/[0-9a-f]{64}$/.test(key) && !/invoice/i.test(key), `cache key is a hash with no question text (${key.slice(0, 14)}…)`);
+const good = { ...r, grounded: true, sources: [{ title: "InvoiceChaser", href: "/projects/invoicechaser" }], model: MODEL };
+check(isCacheable(good), "grounded, cited, main-model live answer is cacheable");
+check(!isCacheable({ ...good, mode: "demo" }), "retrieval-only (demo) answers are not cached");
+check(!isCacheable({ ...good, grounded: false }), "ungrounded answers are not cached");
+check(!isCacheable({ ...good, sources: [] }), "answers without sources are not cached");
+check(!isCacheable({ ...good, answer: "I couldn’t find that in his portfolio." }), "'not covered' answers are not cached");
+check(!isCacheable({ ...good, model: FALLBACK_MODEL }), "fallback-model answers are not cached");
+const hitTrace = cachedTrace({ result: good, model: MODEL, createdAt: "2026-11-22T10:00:00.000Z" }, "runtime", 12);
+check(
+  hitTrace[0].label === "Cache hit · runtime · 12ms" && hitTrace[1].label === "Original run" && hitTrace.slice(2).every((s) => s.kind === "step") && hitTrace.length === good.trace.length + 2,
+  "cache-hit trace: hit step first, then the original run's steps demoted to sub-steps",
+);
+check(cachedTrace({ result: good, model: MODEL, createdAt: "2026-11-22T10:00:00.000Z" }, "build")[0].label === "Cache hit · build-time", "build-time hits are labelled as such");
+// A broken store degrades to a miss / no-op instead of failing the request.
+setAnswerStore({ get: async () => { throw new Error("blobs down"); }, set: async () => { throw new Error("blobs down"); } });
+const broken = answerStore()!;
+check((await broken.get(key)) === null, "a throwing cache read is treated as a miss");
+let wrote = true;
+try { await broken.set(key, { result: good, model: MODEL, createdAt: "x" }); } catch { wrote = false; }
+check(wrote, "a throwing cache write does not throw");
+setAnswerStore(undefined);
+check(answerStore() === null, "no Netlify Blobs environment (local, evals) → cache off");
+
+console.log("\nChat route with an in-memory cache store");
+{
+  // One question per IP per day, so the rate limiter is easy to observe. Groq is mocked; other traffic passes through.
+  process.env.CHAT_DAILY_LIMIT = "1";
+  const realKey = process.env.GROQ_API_KEY;
+  process.env.GROQ_API_KEY = "test-key";
+  const realFetch = globalThis.fetch;
+  let groqCalls = 0;
+  let fallbackNext = false;
+  globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    if (!String(url).includes("api.groq.com")) return realFetch(url, init);
+    groqCalls++;
+    const body = JSON.parse(String(init?.body));
+    if (fallbackNext && body.model === MODEL) return new Response(JSON.stringify({ error: { message: "Rate limit reached. Please try again in 9.5s." } }), { status: 429 });
+    const message = body.messages.at(-1).role === "user"
+      ? { role: "assistant", content: null, tool_calls: [{ id: "t1", type: "function", function: { name: "search_portfolio", arguments: JSON.stringify({ query: "InvoiceChaser human approval" }) } }] }
+      : { role: "assistant", content: "Every draft pauses for approval before anything is sent. [invoicechaser]" };
+    return new Response(JSON.stringify({ choices: [{ message }] }), { status: 200 });
+  }) as typeof fetch;
+
+  const mem = new Map<string, unknown>();
+  let gets = 0, sets = 0, writeDoneAt = 0;
+  setAnswerStore({
+    async get(k) { gets++; return (mem.get(k) as never) ?? null; },
+    async set(k, v) { await new Promise((res) => setTimeout(res, 300)); mem.set(k, v); sets++; writeDoneAt = performance.now(); },
+  });
+  const { POST } = await import("../app/api/chat/route");
+  const ask = async (ip: string, question: string, history: unknown[] = []) => {
+    const res = await POST(new Request("http://local/api/chat", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": ip }, body: JSON.stringify({ question, history }) }));
+    const text = await res.text();
+    return { status: res.status, text, closedAt: performance.now() };
+  };
+  const Q = "How does InvoiceChaser keep a human in the loop?";
+
+  const miss = await ask("10.0.0.1", Q);
+  check(miss.status === 200 && miss.text.includes("Cache miss") && groqCalls === 2, `first ask: cache miss, agent runs (${groqCalls} Groq calls)`);
+  check(sets === 0, "the response stream closes before the cache write finishes");
+  await new Promise((res) => setTimeout(res, 500));
+  check(sets === 1 && writeDoneAt > miss.closedAt, "the grounded answer is written to the cache after the response");
+
+  const before = groqCalls;
+  const hit = await ask("10.0.0.1", "how does invoicechaser keep a human in the loop"); // same IP: its 1 question is used up
+  check(hit.status === 200 && hit.text.includes("Cache hit · runtime") && groqCalls === before, "repeat (normalised) question: cache hit, no Groq call, not rate-limited");
+
+  const [g0, s0] = [gets, sets];
+  const follow = await ask("10.0.0.2", Q, [{ role: "user", content: "Tell me about InvoiceChaser." }, { role: "assistant", content: "It chases invoices." }]);
+  await new Promise((res) => setTimeout(res, 500));
+  check(follow.status === 200 && gets === g0 && sets === s0, "follow-up questions neither read nor write the cache");
+
+  fallbackNext = true;
+  const s1 = sets;
+  const fb = await ask("10.0.0.3", "What does InvoiceChaser do?");
+  await new Promise((res) => setTimeout(res, 500));
+  check(fb.status === 200 && sets === s1, "an answer from the fallback model is shown but not cached");
+
+  const limitedNow = await ask("10.0.0.3", "Something not cached yet?");
+  check(limitedNow.status === 429, "uncached questions still count against the rate limit");
+
+  setAnswerStore(undefined);
+  globalThis.fetch = realFetch;
+  if (realKey === undefined) delete process.env.GROQ_API_KEY; else process.env.GROQ_API_KEY = realKey;
+}
 
 if (vectorSearchEnabled()) {
   console.log("\nLive semantic retrieval (Pinecone)");

@@ -20,6 +20,12 @@ async function main() {
   const chunks = buildIndex();
   const r = await syncRecords(chunks);
   console.log(`sync:vectors: ${chunks.length} chunks → ${INDEX_NAME}/${resolveNamespace()}: ${r.upserted} upserted, ${r.deleted} deleted, ${r.unchanged} unchanged (${Date.now() - t0}ms)`);
+  // Pinecone makes upserts searchable within a few seconds. The next build step (precompute:answers)
+  // searches the index, so give it time to see this build's content.
+  if (r.upserted || r.deleted) {
+    console.log("sync:vectors: waiting 5s for Pinecone to index the changes");
+    await new Promise((res) => setTimeout(res, 5000));
+  }
 }
 
 main().catch((err) => {

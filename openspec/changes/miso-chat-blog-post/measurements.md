@@ -1,0 +1,32 @@
+# Measurement log
+
+Every figure the post states must appear here with its source. "Before" rows were taken on the
+production deploy that predates `cache-miso-answers`.
+
+## Baseline: before caching
+
+- **Deploy:** `6aeeca6187e1713c8c6069bd` (production, commit `f7665c8`, published 2026-11-07)
+- **Measured:** 2026-11-21 19:41–19:49 UTC, from a laptop over the public internet
+- **Method:** [`evidence/baseline.mjs`](evidence/baseline.mjs) POSTs each suggestion to `https://www.chiranjeevthomas.com/api/chat` with empty history, 5 rounds, 12 s apart.
+  - It times the first visible answer token ("first words") and the `done` event ("total").
+  - Raw rows: [`evidence/baseline-2026-11-21.ndjson`](evidence/baseline-2026-11-21.ndjson).
+  - These are server-stream timings seen by a client. The chat's own trace header times from the click, so it adds a few ms of UI work.
+
+| Suggestion | Runs | First words (median) | Total (median) | Groq calls | Searches |
+|---|---|---|---|---|---|
+| What has he shipped with LLMs in production? | 5 | 1,763 ms | 2,020 ms | 2 | 1 |
+| How does InvoiceChaser keep a human in the loop? | 5 | 1,761 ms | 2,007 ms | 2 | 1 |
+| What’s his experience with RAG? | 5 | 1,627 ms | 2,060 ms | 2 | 1 |
+| Is he a fit for a senior full-stack AI role? | 5 | 1,687 ms | 2,028 ms | 2 | 1 |
+
+- All 20 runs were `live`, grounded and on the main model (no rate-limit fallback).
+- The first request of the session took **6,526 ms**, a cold function start. It's included in the first row's 5 runs. The median isn't skewed by one outlier, so nothing was removed by hand.
+- Groq calls per question = 2 (one round that decides to search, one that writes the answer), read from each run's trace.
+
+## Fixed facts
+
+<!-- Filled by task 1.2: Groq free-tier tokens/min, Pinecone Starter namespace cap, corpus chunk count and tokens, deploy_time. -->
+
+## After caching
+
+<!-- Filled by task 5.1 once cache-miso-answers and pin-vectors-to-deploy are live. -->
