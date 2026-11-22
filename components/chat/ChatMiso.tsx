@@ -12,7 +12,7 @@ type Msg = { role: "user" | "bot"; text: string; sources?: Source[]; pending?: b
 type Result = { answer: string; sources: Source[]; trace: Step[]; grounded: boolean; mode: "live" | "demo" };
 
 /** While tokens stream in, hide citation markers (and a half-written one at the end) and Markdown bold. */
-const liveText = (raw: string) => raw.replace(/\s*\[[a-z0-9-]*\]/g, "").replace(/\s*\[[a-z0-9-]*$/, "").replace(/\*\*/g, "").trimStart();
+const liveText = (raw: string) => raw.replace(/[\u2010-\u2015\u2212]/g, "-").replace(/\s*\[[a-z0-9-]*\]/g, "").replace(/\s*\[[a-z0-9-]*$/, "").replace(/\*\*/g, "").trimStart();
 
 /** Reads the chat API's NDJSON stream: trace steps, answer tokens, then the final result. */
 async function readEvents(res: Response, on: { step: (s: Step) => void; token: (t: string) => void; reset: () => void }): Promise<Result> {

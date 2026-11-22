@@ -30,19 +30,19 @@
 
 ## 5. Post-launch measurements (after `cache-miso-answers` and `pin-vectors-to-deploy` are live)
 
-- [ ] 5.1 Measure and log: bubble click time (client timer), runtime cache hit and miss lookup times (trace steps, median of 5), Groq rounds per path (0 for hits), tokens for a typical first-time question (Groq `usage` from a scratch run), precompute duration and namespace name/upserts (build log), embedding tokens per content deploy, current namespace count (Pinecone console); verify each new row in `measurements.md` has a source and the deploy ID, and copy the values into `miso-figures.ts`
-- [ ] 5.2 Capture a trace screenshot showing `Cache hit · runtime · Nms` and save it to `public/media/`; verify it contains no visitor data
+- [x] 5.1 Measure and log: bubble click time (client timer), runtime cache hit and miss lookup times (trace steps, median of 5), Groq rounds per path (0 for hits), tokens for a typical first-time question (Groq `usage` from a scratch run), precompute duration and namespace name/upserts (build log), embedding tokens per content deploy, current namespace count (Pinecone console); verify each new row in `measurements.md` has a source and the deploy ID, and copy the values into `miso-figures.ts`
+- [x] 5.2 Capture a trace screenshot showing `Cache hit · runtime · Nms` and save it to `public/media/`; verify it contains no visitor data
 
 ## 6. The post
 
-- [ ] 6.1 Write `content/posts/how-miso-answers.md` (`draft: true`) following the outline in design.md §6, with each `##` section self-contained (names Miso and its subject, ≤ ~250 words), GitHub permalinks for code, the Meadows citation, and `<picture>` embeds; verify every number in the text appears in `measurements.md` (manual cross-check listed in the PR) and the TL;DR has 3 bullets with measured figures
-- [ ] 6.2 Proofread for over-claiming: the "1,000x" section is labelled as a design not shipped, the reversed decision is stated plainly, and no figure lacks a source; verify with a second read of each section against design.md
-- [ ] 6.3 Check the rendered post: table of contents, reading time, tags, RSS entry, sitemap entry and Open Graph metadata; verify on `npm run dev` and in `/rss.xml` and `/sitemap.xml`
+- [x] 6.1 Write `content/posts/how-miso-answers.md` (`draft: true`) following the outline in design.md §6, with each `##` section self-contained (names Miso and its subject, ≤ ~250 words), GitHub permalinks for code, the Meadows citation, and `<picture>` embeds; verify every number in the text appears in `measurements.md` (manual cross-check listed in the PR) and the TL;DR has 3 bullets with measured figures
+- [x] 6.2 Proofread for over-claiming: the "1,000x" section is labelled as a design not shipped, the reversed decision is stated plainly, and no figure lacks a source; verify with a second read of each section against design.md
+- [x] 6.3 Check the rendered post: table of contents, reading time, tags, RSS entry, sitemap entry and Open Graph metadata; verify on `npm run dev` and in `/rss.xml` and `/sitemap.xml`
 
 ## 7. Miso self-knowledge
 
-- [ ] 7.1 Add live eval cases: "How does Miso cache answers?", "What happens to the chat if Pinecone goes down?" and "How fast is a cached answer?" must be grounded and cite `/blog/how-miso-answers` (the last must state only the post's figure); verify with `npm run eval:chat` with keys
-- [ ] 7.2 Run the existing retrieval golden set with the post included; verify every case still reaches its expected page, rewriting any post section that displaces a project rather than widening accepted pages
+- [x] 7.1 Add live eval cases: "How does Miso cache answers?", "What happens to the chat if Pinecone goes down?" and "How fast is a cached answer?" must be grounded and cite `/blog/how-miso-answers` (the last must state only the post's figure); verify with `npm run eval:chat` with keys
+- [x] 7.2 Run the existing retrieval golden set with the post included; verify every case still reaches its expected page, rewriting any post section that displaces a project rather than widening accepted pages
 
 ## 8. Launch
 

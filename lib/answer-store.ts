@@ -18,7 +18,9 @@ import { normalizeQuestion, type CachedAnswer } from "./answer-cache";
  */
 export function isCacheable(r: AgentResult): boolean {
   return r.mode === "live" && r.grounded && r.sources.length > 0 && r.model === MODEL && !notCovered(r.answer)
-    && r.search.meaningOk && r.search.meaningHits > 0;
+    && r.search.meaningOk && r.search.meaningHits > 0
+    // Never freeze an answer that still shows raw citation markers (e.g. a format the parser didn't recognise).
+    && !/\[[^\]\s]{2,}\]/.test(r.answer);
 }
 
 /** A hash of the normalised question. The visitor's text itself is never stored. */

@@ -3,7 +3,7 @@ title: Making a free-tier RAG agent fast without serving stale answers
 description: How Miso, the agent on this site, answers in about two seconds on a free LLM tier, why I cache its answers per deploy instead of by content hash, and the vector-index bug that caching exposed.
 date: 2026-11-22
 tags: [ai-engineering, agents, rag, llm, observability]
-draft: true
+draft: false
 ---
 
 Miso is the chat on this site: a tool-calling RAG agent that answers questions about my work and cites where each answer came from. This post is about the unglamorous part of running it: what each answer costs, how I cached answers without ever serving a stale one, and a deploy bug that caching made impossible to ignore.
@@ -80,7 +80,11 @@ Pick a kind of question to see which layers it touches and what it costs:
 
 Two details matter in production. The cache write runs after the response has finished, so saving an answer never delays it. And every cache read and write has a short timeout: if the store is slow or down, Miso answers live as before.
 
-That timeout exists because of a real failure. On my first deploy preview, typed first questions hung for 30 seconds and returned 504s, while follow-ups (which skip the cache) worked. I switched the store to the same fetch and region settings Netlify's own Next.js adapter uses for its Blobs, and added the timeouts so a hanging cache can only ever cost 1.5 seconds. On the next preview, a miss took 16 to 44 ms to detect and a hit took about 50 ms.
+That timeout exists because of a real failure. On my first deploy preview, typed first questions hung for 30 seconds and returned 504s, while follow-ups (which skip the cache) worked. I switched the store to the same fetch and region settings Netlify's own Next.js adapter uses for its Blobs, and added the timeouts so a hanging cache can only ever cost 1.5 seconds. On production, a cache hit is found in about 60 ms (median of five).
+
+Caching also froze a bug that had always been there. The first production build precomputed a bubble answer that showed raw citation markers like `[job‑grabbit]`: the model had written the ids with non-breaking hyphens, which the citation parser didn't recognise. Before caching, that answer would have been one visitor's bad luck. Precomputed, every visitor saw it. The parser now normalises Unicode hyphens, and an answer that still shows citation markers is never cached.
+
+<figure class="diagram"><img src="/media/miso-cache-hit-trace.jpg" alt="Miso's chat on production answering a repeated question from the cache: the agent trace shows 'Cache hit · runtime · 72ms', the original run below it, and 'done in 0.4s'." loading="lazy"><figcaption>A repeated question on production: found in the cache in 72 ms, answered in 0.4 s.</figcaption></figure>
 
 ## The cache key decision I reversed
 
@@ -110,7 +114,7 @@ The fix moves the vectors inside the boundary. Each build syncs into a namespace
 
 ## The tradeoff: Miso re-embeds everything when content changes
 
-Per-version namespaces cost something I chose to pay: a content change now embeds Miso's whole corpus (43 chunks, about 6K tokens) instead of only the changed chunks. Copying unchanged vectors forward would avoid that, but Pinecone's current API doesn't return the vectors it derives from text. A design with one immutable record per chunk version plus a per-deploy manifest would avoid it too, at the cost of tracking which records each kept deploy still references. At this size, the simple version wins. I'd switch if a full embed ever cost more than 10% of the monthly embedding allowance or added more than 10 seconds to a build.
+Per-version namespaces cost something I chose to pay: a content change now embeds Miso's whole corpus: 57 chunks and about 9K tokens with this post included (43 chunks, about 6K tokens, before it) instead of only the changed chunks. Copying unchanged vectors forward would avoid that, but Pinecone's current API doesn't return the vectors it derives from text. A design with one immutable record per chunk version plus a per-deploy manifest would avoid it too, at the cost of tracking which records each kept deploy still references. At this size, the simple version wins. I'd switch if a full embed ever cost more than 10% of the monthly embedding allowance or added more than 10 seconds to a build.
 
 ## Pruning old vector namespaces, and a trap I nearly shipped
 
@@ -133,6 +137,7 @@ So each namespace carries two stamps. `syncedAt` only protects a namespace a bui
 | Rollback within the last 5 versions | Its own pages, cached answers and vectors come back together. |
 | Rollback further back | Keyword search over its own content. Not cached. |
 | The model cites a chunk it never retrieved | The citation is dropped before the answer is shown. |
+| The model formats citations oddly (Unicode hyphens) | Normalised before parsing. An answer still showing markers is never cached. |
 
 ## What it cost and what it bought
 
@@ -141,12 +146,13 @@ Here is what Miso's caching changed, measured before and after:
 | | Before | After |
 |---|---|---|
 | Suggestion bubble | 1.6 to 1.8 s to first words, about 2.0 s total, 2 LLM calls | under 0.1 s, no request |
-| Repeated first question | about 2.0 s, 2 LLM calls, counts against the visitor's daily limit | about 50 ms lookup, no LLM call, doesn't count |
-| New first question | about 2.0 s | about 2.0 s, plus a cache lookup of 16 to 44 ms |
+| Repeated first question | about 2.0 s, 2 LLM calls, counts against the visitor's daily limit | found in about 60 ms, no LLM call, doesn't count. End to end 0.4 s in a warm browser session, up to about 5 s when a fresh function instance starts |
+| New first question | about 2.0 s | about 2.0 s, plus a cache lookup of 15 to 100 ms |
+| Build and deploy time | 65 s | 88 s: the 23 s buys precomputed bubbles |
 | Deploy with unchanged content | vectors re-checked in place | same namespace, 0 chunks embedded |
-| Deploy with changed content | only changed chunks embedded, into the live namespace | about 6K tokens into a new namespace, live untouched until publish |
+| Deploy with changed content | only changed chunks embedded, into the live namespace | the whole corpus (about 9K tokens now) into a new namespace, live untouched until publish |
 
-All figures are as of November 2026, measured on this site's production deploy and a Netlify deploy preview.
+All figures are as of November 2026, measured on this site's production deploys before and after the change.
 
 ## What I'd do at 1,000x the traffic
 

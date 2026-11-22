@@ -12,9 +12,9 @@ export const FIGURES = {
   /** After caching (filled from production measurements). */
   after: {
     bubble: "under 0.1 s",
-    cacheHitLookup: "about 50 ms",
-    cacheMissLookup: "about 15–45 ms",
+    cacheHitLookup: "about 60 ms",
+    cacheMissLookup: "about 15–100 ms",
     liveAnswer: "about 2 s",
   },
-  vectors: { chunks: 43, fullEmbedTokens: "about 6K", namespacesKept: 5, starterNamespaceCap: 100 },
+  vectors: { chunks: 57, fullEmbedTokens: "about 9K", namespacesKept: 5, starterNamespaceCap: 100 },
 } as const;
