@@ -51,10 +51,10 @@
 
 ## 4. Link from the chat
 
-- [ ] 4.1 In `components/chat/ChatMiso.tsx`, add a plain `<a href="/projects/miso-chat">` reading "How I built Miso" to the chat bar, before the mode pill.
-- [ ] 4.2 At the end of the trace's how-it-works note, add "Read how it was built and the decisions behind it →", linking to the same page.
-- [ ] 4.3 Style the link in `app/globals.css`: keyboard focus ring, and a shorter label ("How it’s built") under 640px with the subtitle truncating so the controls never wrap.
-- [ ] 4.4 Verify at 360px and on desktop: the link is visible and reachable with Tab, clicking it lands on `/projects/miso-chat`, and the page is not left scroll-locked.
+- [x] 4.1 In `components/chat/ChatMiso.tsx`, add a plain `<a href="/projects/miso-chat">` reading "How I built Miso" to the chat bar. (Placed as its own line under the chat title rather than before the mode pill: a link in the bar row squeezed the title to nothing at 360px.)
+- [x] 4.2 At the end of the trace's how-it-works note, add "Read how it was built and the decisions behind it →", linking to the same page.
+- [x] 4.3 Style the link in `app/globals.css`: keyboard focus ring (the site-wide `:focus-visible` rule), and a shorter label under 640px ("How I built Miso →" instead of "How I built Miso, and why →") so the controls never wrap.
+- [x] 4.4 Verify at 360px and on desktop: the link is visible and reachable with Tab, clicking it lands on `/projects/miso-chat`, and the page is not left scroll-locked.
 
 ## 5. Redirect
 

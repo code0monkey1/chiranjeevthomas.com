@@ -246,6 +246,8 @@ export function ChatMiso({ onClose }: { onClose?: () => void } = {}) {
           <span style={{ minWidth: 0 }}>
             <strong>Psst. Ask me about my human.</strong>
             <small>I’ve napped on his keyboard through every project · <span style={{ color: "var(--sienna)" }}>{MOOD_TEXT[mood]}</span></small>
+            {/* A plain link (full page load), like the source links: leaving the home page tears the dialog down cleanly. */}
+            <a className="chat-built" href="/projects/miso-chat">How I built Miso<span className="chat-built-why">, and why</span>{"\u00a0"}→</a>
           </span>
         </div>
         <span className={`mode-pill ${mode === "live" ? "live" : "demo"}`}>{mode === "live" ? "● Live" : mode === "demo" ? "Retrieval only" : "Connecting…"}</span>
@@ -316,7 +318,8 @@ export function ChatMiso({ onClose }: { onClose?: () => void } = {}) {
             ) : (
               <>an LLM (GPT-OSS 120B on Groq) decides when to call <code className="mono">search_portfolio</code>, up to 3 times, optionally limited to one project. Each call runs a meaning search (Pinecone vector embeddings) and a keyword search and merges the two rankings. The LLM answers only from those passages and cites them.</>
             )}{" "}
-            The suggested questions were answered when this version of the site was built, so they appear instantly; a first question someone already asked since the last deploy comes from a cache. The trace says when an answer is cached.
+            The suggested questions were answered when this version of the site was built, so they appear instantly; a first question someone already asked since the last deploy comes from a cache. The trace says when an answer is cached.{" "}
+            <a href="/projects/miso-chat">Read how it was built and the decisions behind it →</a>
           </p>
         </aside>
       </div>

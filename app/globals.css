@@ -334,6 +334,8 @@ html.dialog-open { overflow: hidden; }
 .chat-title { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 12px; }
 .chat-title strong { display: block; font-size: 16px; }
 .chat-title small { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.chat-built { display: block; width: fit-content; margin-top: 2px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--sienna); text-decoration: none; }
+.chat-built:hover { text-decoration: underline; }
 .mode-pill { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
 .mode-pill.live { background: var(--green-soft); color: var(--green); }
 .mode-pill.demo { background: var(--sand-soft); color: var(--sienna); }
@@ -625,6 +627,8 @@ html.dialog-open { overflow: hidden; }
   .nav-links .nav-contact { margin: 8px 0 0; text-align: center; }
   .chat-bar { flex-wrap: nowrap; padding: 10px 12px; }
   .chat-title small { display: none; }
+  .chat-built { font-size: 11px; }
+  .chat-built-why { display: none; }
   .chat-title strong { font-size: 15px; line-height: 1.3; }
   .mode-pill { white-space: nowrap; }
   .starters { padding-left: 0; }
