@@ -42,7 +42,7 @@
   - Preview and production isolation come for free.
   - A rollback brings back that deploy's own answers, which match that deploy's prompt and code.
   - Netlify deletes the store with the deploy, so no pruning is needed.
-- **Alternative considered:** a site-wide store keyed by a content-and-code fingerprint. It would keep the cache warm across deploys that don't change answers (5 of the 8 commits in the last month didn't touch `content/` or the agent and search code). But it's only correct if every input is in the hash, and it needs fingerprint code, source hashing and pruning. Rejected: the runtime cache fills again after a few questions, and the bubbles, which get most of the repeat traffic, are precomputed on every build anyway.
+- **Alternative considered:** a site-wide store keyed by a content-and-code fingerprint. It would keep the cache warm across deploys that don't change answers (5 of the 12 non-merge commits from 21 Oct to 21 Nov 2026 touched neither `content/` nor the agent and search code). But it's only correct if every input is in the hash, and it needs fingerprint code, source hashing and pruning. Rejected: the runtime cache fills again after a few questions, and the bubbles, which get most of the repeat traffic, are precomputed on every build anyway.
 - **Region:** rely on the environment context. If the deploy store throws its "needs to be configured with a region" error, pass `region` explicitly, as the adapter does (`us-east-2` unless `USE_REGIONAL_BLOBS`). Task 4.1 verifies this on a deploy preview.
 - **Missing Blobs context** (local `next dev`, the evals): `getDeployStore` throws `MissingBlobsEnvironmentError`. The cache detects this once and becomes a no-op for that instance.
 

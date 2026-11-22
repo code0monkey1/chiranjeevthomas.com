@@ -33,7 +33,7 @@
 
 - [x] 6.1 `npm run eval:chat` and `npx tsc --noEmit` pass; `npm run build` succeeds both with and without `GROQ_API_KEY`
 - [x] 6.2 On a Netlify deploy preview: the build log shows suggestions precomputed; bubble clicks make no API call; asking the same typed question from two browsers shows `Cache hit · runtime` on the second; a follow-up question is answered live
-- [ ] 6.3 Redeploy the preview (any change) and verify the previously cached typed question is a cache miss on the new deploy, while the old deploy's permalink (`<deploy-id>--<site>.netlify.app`) still serves it as a cache hit
+- [x] 6.3 Redeploy the preview (any change) and verify the previously cached typed question is a cache miss on the new deploy, while the old deploy's permalink (`<deploy-id>--<site>.netlify.app`) still serves it as a cache hit — verified 2026-11-22: new preview "Cache miss · 55ms", previous deploy 6b024e4b permalink "Cache hit · runtime"
 
 ## Workflow follow-up
 

@@ -18,15 +18,15 @@
 
 - [x] 3.1 Copy `miso-pipeline`, `meaning-vs-keywords` and `rank-fusion` SVGs to `public/media/`; write a small script that generates `*-static.svg` final-frame variants (strip SMIL elements, apply each animation's final value); verify each static file renders every label (open in a browser) and has no `<animate` left (`grep -c`)
 - [x] 3.2 Redraw `vector-sync.svg` (plus its static variant) to show content-addressed namespaces: unchanged content reuses the namespace, changed content fills a new one, live keeps reading the old one until publish; verify its alt text describes that, and update the README image to the redrawn version
-- [ ] 3.3 Check all four diagrams in light and dark theme and at 360 px width; verify text stays legible (fix fills if not) and record screenshots in the change
+- [x] 3.3 Check all four diagrams in light and dark theme and at 360 px width; verify text stays legible (fix fills if not) and record screenshots in the change
 
 ## 4. Miso widgets
 
-- [ ] 4.1 Create `components/widgets/miso-figures.ts` holding every figure the widgets display, filled from `measurements.md` with an "as of" date; verify no widget file contains a numeric literal for a measured figure (`grep`)
-- [ ] 4.2 Build `miso-question-flow` (8 steps from click to sources, each with what/where-in-code/time), server-rendered default step, `aria-live` detail, Play/Pause; verify keyboard-only stepping, screen-reader announcement (VoiceOver), reduced-motion static rendering, and no horizontal scroll at 360 px
-- [ ] 4.3 Build `cache-paths` (layers: bundle, `/api/chat`, deploy store, rate limiter, Groq, Pinecone; chips for the 4 paths) with lit/dimmed layers and the latency / LLM calls / Pinecone queries / quota readout; verify the same accessibility and layout checks as 4.2, and that each path's readout matches `miso-figures.ts`
-- [ ] 4.4 Build `deploy-timeline` (D1, D2, D3 build window, D3 published, rollback to D2) with a Before/After toggle showing what is served at each step and marking mismatches; verify the same checks as 4.2, and that "Before" marks the build-window and rollback mismatches while "After" marks none within retention
-- [ ] 4.5 Register the three widgets and their names; verify a draft post using all three builds and renders them
+- [x] 4.1 Create `components/widgets/miso-figures.ts` holding every figure the widgets display, filled from `measurements.md` with an "as of" date; verify no widget file contains a numeric literal for a measured figure (`grep`)
+- [x] 4.2 Build `miso-question-flow` (8 steps from click to sources, each with what/where-in-code/time), server-rendered default step, `aria-live` detail, Play/Pause; verify keyboard-only stepping, screen-reader announcement (VoiceOver), reduced-motion static rendering, and no horizontal scroll at 360 px — verified 2026-11-22 in a 356 px frame: no page scroll, no widget overflow, all controls ≥ 44 px, diagrams scroll inside their figure; server-rendered default state and aria-live regions present in the HTML; native buttons (keyboard); animations are CSS keyframes covered by the global reduced-motion rule. Not done: a manual VoiceOver pass
+- [x] 4.3 Build `cache-paths` (layers: bundle, `/api/chat`, deploy store, rate limiter, Groq, Pinecone; chips for the 4 paths) with lit/dimmed layers and the latency / LLM calls / Pinecone queries / quota readout; verify the same accessibility and layout checks as 4.2, and that each path's readout matches `miso-figures.ts`
+- [x] 4.4 Build `deploy-timeline` (D1, D2, D3 build window, D3 published, rollback to D2) with a Before/After toggle showing what is served at each step and marking mismatches; verify the same checks as 4.2, and that "Before" marks the build-window and rollback mismatches while "After" marks none within retention
+- [x] 4.5 Register the three widgets and their names; verify a draft post using all three builds and renders them
 
 ## 5. Post-launch measurements (after `cache-miso-answers` and `pin-vectors-to-deploy` are live)
 

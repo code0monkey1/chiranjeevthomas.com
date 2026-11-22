@@ -102,7 +102,7 @@ TL;DR for hiring managers          3 bullets, each with a measured number
 ## Why caching an agent is hard    history-dependence, frozen bad answers, honest traces
 ## Five ways to cache it           table: in-memory / Blobs / build-time / CDN / semantic, with tradeoffs and the choice
 ## What shipped                    widget: cache-paths
-## The decision I reversed         content fingerprint vs deploy ID: the argument, the data (5 of 8 commits), the switch
+## The decision I reversed         content fingerprint vs deploy ID: the argument, the data (5 of 12 commits touched nothing an answer depends on), the switch
 ## The vectors had the same bug    systems view (stocks, flows, the deploy as boundary); widget: deploy-timeline
 ## Pruning, and a trap I nearly shipped   "Seeking the Wrong Goal": stamp-at-build vs live; onSuccess fix
 ## When things break               failure-mode table incl. accepted degraded mode and the cache guard

@@ -6,7 +6,7 @@
 - `syncRecords()` (`lib/vector-store.ts`) is already a delta sync. It lists the IDs, reads each stored `hash`, upserts the chunks that changed and deletes the ones that were removed. `hashOf()` covers each chunk's text, href, source, project and `EMBED_MODEL`.
 - **The current corpus:**
   - 43 chunks, about 6K tokens, so a full embed is about 6K tokens.
-  - 3 of the last 8 commits touched `content/`.
+  - 6 of the 12 non-merge commits from 21 Oct to 21 Nov 2026 touched `content/` (corrected: an earlier count of "3 of 8" mixed in merge commits).
   - The live deploy builds in about 65 s.
 - **Where deploys come from:** every Netlify deploy is `context: production` from `main`. No deploy previews exist today, but Netlify enables them by default.
 - **Netlify facts, verified:**
@@ -106,7 +106,7 @@ embed only changed   today: cheap, live reads a      ideal: safe and cheap
 
 - **The bug being fixed is mutating the namespace that live traffic reads, not the delta sync.** Embedding only changed chunks is strictly better on cost.
 - **This design fills an empty namespace, so a one-character edit to indexed content re-embeds the whole corpus.** That's a side effect of how isolation is achieved, not a goal. Chunking is not the cost: `buildIndex()` re-chunks everything on every build anyway, locally, in milliseconds.
-- **What the waste costs at this scale:** about 6K embedding tokens (43 chunks) per content-changing deploy. That's about 3 such deploys a month, so about 18K tokens a month, plus a few seconds of build time. It's small next to the Starter plan's embedding allowance (check the exact figure on Pinecone's pricing page before quoting it).
+- **What the waste costs at this scale:** about 6K embedding tokens (43 chunks) per content-changing deploy. That's up to about 6 such deploys a month (6 of 12 commits touched content), so about 36K tokens a month, plus a few seconds of build time. It's small next to the Starter plan's embedding allowance (check the exact figure on Pinecone's pricing page before quoting it).
 - **How it grows:** corpus tokens × deploys that change content. With a 1M-token corpus deploying daily, it would be about 30M tokens a month and minutes per build.
 - **Alternatives considered:**
   - **Copy unchanged vectors forward** (fetch values from the live namespace, upsert them into the new one, embed only changed chunks). Rejected. Pinecone's current document-index API makes it impossible: the derived vectors "are internal and aren't returned", and a vector on an embedded field is "rejected with a 400" (docs.pinecone.io/guides/search/integrated-embedding). Whether the older Records API this index uses allows it is unverified. Relying on it would tie the design to an API Pinecone is moving away from.
@@ -121,7 +121,7 @@ embed only changed   today: cheap, live reads a      ideal: safe and cheap
 
 ## Risks / Trade-offs
 
-- [Pinecone's metadata-only `update` re-embeds the record, or isn't supported on integrated-embedding indexes.] → **Checked 2026-11-21 (task 1.1), not a problem:** on a scratch namespace of this index, `update({ id, metadata: { syncedAt } })` merged the new field and left the 1,024-dim vector bit-for-bit identical, with `content` and `hash` kept. `listNamespaces()` returns each name with its record count. The fallback below is no longer needed. Original note: task 1.1 checks this first. Fallback: skip pruning and log a warning once more than 80 namespaces exist. At about 3 content deploys a month that is years of headroom, and the cleanup becomes manual.
+- [Pinecone's metadata-only `update` re-embeds the record, or isn't supported on integrated-embedding indexes.] → **Checked 2026-11-21 (task 1.1), not a problem:** on a scratch namespace of this index, `update({ id, metadata: { syncedAt } })` merged the new field and left the 1,024-dim vector bit-for-bit identical, with `content` and `hash` kept. `listNamespaces()` returns each name with its record count. The fallback below is no longer needed. Original note: task 1.1 checks this first. Fallback: skip pruning and log a warning once more than 80 namespaces exist. At about 6 content deploys a month that is years of headroom, and the cleanup becomes manual.
 - [A content deploy now embeds the full corpus (about 6K tokens) instead of only the changed chunks.] → Accepted at this scale, with a measured trigger and a named path to switch to (Decision 5).
 - [Two builds running at once: one prunes while the other is mid-sync.] → An unpublished namespace synced less than an hour ago is never pruned, and Netlify runs one build at a time per site on this plan. The remaining window is only the seconds before the sync writes `syncedAt`.
 - [A rollback past the 5 most recent versions degrades to keyword search.] → Accepted (degraded mode). The guard keeps those answers out of the caches, and the next deploy restores full search.

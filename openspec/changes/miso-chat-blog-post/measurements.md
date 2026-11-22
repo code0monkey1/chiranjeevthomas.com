@@ -35,6 +35,7 @@ production deploy that predates `cache-miso-answers`.
 | Full embed of a new namespace vs. unchanged check | ~5.8 s vs ~5.9–6.4 s total sync time; both dominated by list/fetch round trips, plus a 5 s indexing wait only when something was upserted | same `sync:vectors` logs (laptop → Pinecone us-east-1) |
 | Production build+deploy time before this change | 65 s (`deploy_time`) | Netlify deploy record `6aeeca6187e1713c8c6069bd` |
 | Precompute step (4 suggestions) | 43 s locally (8 s gaps between runs to respect 8K tokens/min) | `npx tsx scripts/precompute-answers.ts`, 2026-11-21 |
+| Commits on main, 21 Oct–21 Nov 2026 (non-merge) | 12 total; 6 touched `content/`; 7 touched content or answer code (`lib/agent.ts`, `lib/search-index.ts`, `lib/vector-store.ts`); 5 touched neither | `git log --no-merges --since=2026-10-21 --until=2026-11-22 main` + `git show --name-only` per commit |
 | Runtime cache on Netlify (deploy preview 1) | miss lookup 44 ms / 16 ms; hit lookup 52 ms | `/api/chat` traces, deploy preview `6b024e4b`, 2026-11-22 |
 
 ## After caching

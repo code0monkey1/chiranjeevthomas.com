@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { MisoWidget } from "./MisoWidgets";
 
 /* ---------- generic clickable pipeline ---------- */
 type Stage = { label: string; what: string; tech: string };
@@ -153,6 +154,6 @@ export function Widget({ name }: { name: string }) {
     case "search-examples": return <SearchExamples />;
     case "search-pipeline": return <Pipeline initial="llm" stages={SEARCH_STAGES} lanes={[{ ids: ["app", "api", "llm", "guard", "es", "res"] }]} />;
     case "rag-pipeline": return <Pipeline initial="retrieve" stages={RAG_STAGES} lanes={[{ name: "Ingestion (offline)", ids: ["load", "chunk", "embed", "store"] }, { name: "Query (per request)", ids: ["ask", "retrieve", "rerank", "generate", "cite"] }]} />;
-    default: return null;
+    default: return <MisoWidget name={name} />;
   }
 }

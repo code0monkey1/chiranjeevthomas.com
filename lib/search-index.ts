@@ -13,6 +13,8 @@ const strip = (md: string) =>
   md
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/```[\s\S]*?```/g, "")
+    // Raw HTML in posts (figures, pictures) is layout, not content: keep only the text between tags.
+    .replace(/<[^>]+>/g, " ")
     .replace(/\|/g, " ")
     .replace(/[#*_`>[\]]/g, "")
     .replace(/\s+/g, " ")
