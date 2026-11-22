@@ -3,6 +3,9 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { RagdollCat, MOOD_TEXT, type Mood } from "./RagdollCat";
 import { ChaseLoader } from "./ChaseLoader";
 import { CloseIcon, ResetIcon } from "../Icons";
+import { SUGGESTIONS } from "@/lib/suggestions";
+import { PRECOMPUTED } from "@/lib/precomputed";
+import { cachedTrace, normalizeQuestion } from "@/lib/answer-cache";
 
 type Source = { title: string; href: string };
 type Msg = { role: "user" | "bot"; text: string; sources?: Source[]; pending?: boolean; streaming?: boolean };
@@ -40,12 +43,6 @@ type Step = { kind: "goal" | "think" | "tool" | "step" | "done" | "err"; label: 
 
 const INTRO =
   "Meow! I’m Miso. I’ve watched Chiranjeev build every one of his projects, so ask me anything about his work. I’ll dig through his portfolio and show you exactly where I found each answer.";
-const SUGGESTIONS = [
-  "What has he shipped with LLMs in production?",
-  "How does InvoiceChaser keep a human in the loop?",
-  "What’s his experience with RAG?",
-  "Is he a fit for a senior full-stack AI role?",
-];
 const EMOTE_LINES: Record<string, string> = {
   smile: "There you go — my best smile. Ask me anything about Chiranjeev’s work whenever you’re ready.",
   smirk: "Oh, I know a thing or two about Chiranjeev’s projects… ask me and find out.",
@@ -114,6 +111,19 @@ export function ChatMiso({ onClose }: { onClose?: () => void } = {}) {
       setTrace([{ kind: "goal", label: "Question received", detail: q }, { kind: "think", label: "Expression requested", detail: `${emo} · no search needed` }]);
       setElapsed("");
       settle(emo, 5500);
+      return;
+    }
+    // Suggestion answers were computed when this version of the site was built and ship in the page,
+    // so they show at once with no request. They don't depend on the conversation, so history doesn't matter.
+    const pre = PRECOMPUTED[normalizeQuestion(q)];
+    if (pre) {
+      const t0 = performance.now();
+      setMsgs((m) => [...m, { role: "user", text: q }, { role: "bot", text: pre.result.answer, sources: pre.result.sources }]);
+      setTrace([{ kind: "goal", label: "Question received", detail: q }, ...cachedTrace(pre, "build")]);
+      const took = ((performance.now() - t0) / 1000).toFixed(1) + "s";
+      setFirstWords(took);
+      setElapsed(took);
+      settle(pre.result.grounded ? "happy" : "confused");
       return;
     }
     // The server keeps no state: each question carries the last 4 exchanges. Assistant turns note their
@@ -305,7 +315,8 @@ export function ChatMiso({ onClose }: { onClose?: () => void } = {}) {
               <>no LLM is connected right now, so your question goes straight to <code className="mono">search_portfolio</code>: a meaning search (Pinecone vector embeddings) and a keyword search, merged into one ranking. Miso quotes the best passages and links where each came from.</>
             ) : (
               <>an LLM (GPT-OSS 120B on Groq) decides when to call <code className="mono">search_portfolio</code>, up to 3 times, optionally limited to one project. Each call runs a meaning search (Pinecone vector embeddings) and a keyword search and merges the two rankings. The LLM answers only from those passages and cites them.</>
-            )}
+            )}{" "}
+            The suggested questions were answered when this version of the site was built, so they appear instantly; a first question someone already asked since the last deploy comes from a cache. The trace says when an answer is cached.
           </p>
         </aside>
       </div>

@@ -13,7 +13,7 @@ Next.js 15 (App Router, TypeScript) on Netlify · Groq (`gpt-oss-120b`) for the 
 - **Agentic retrieval:** the LLM decides *whether* to search, *what* to search for (it rewrites vague or follow-up questions into standalone queries), and *where*: it can scope a search to a single project. Up to 3 searches per question.
 - **Hybrid search:** every search runs a meaning search (Pinecone vector embeddings) and a keyword search (BM25), merged with reciprocal rank fusion.
 - **Grounded answers:** the model may cite only chunk ids it actually retrieved. Fabricated citations are dropped before the answer reaches the visitor.
-- **Always current:** every deploy re-syncs the vectors, re-embedding only the chunks whose text changed.
+- **Always matches the page:** each version of the content gets its own Pinecone namespace, so a build in progress, a failed build or a rollback never leaves the chat searching content the site doesn't show.
 - **Degrades instead of breaking:** with no Pinecone it searches by keyword; with no LLM (or a Groq outage) it quotes the best passages; on a Groq rate limit it switches models.
 - **Observable:** the agent trace beside the chat shows each tool call, the meaning and keyword matches with their scores, the merged ranking, and which sources the answer used.
 
@@ -98,14 +98,27 @@ Each search returns its top 10. Every chunk then scores `Σ 1 / (60 + rank)` ove
 ## Keeping the vectors current
 
 <p align="center">
-  <img src="docs/vector-sync.svg" alt="Animated deploy sync: unchanged chunks are skipped, edited and new chunks are upserted and re-embedded by Pinecone, deleted chunks are removed." width="100%">
+  <img src="docs/vector-sync.svg" alt="Animated diagram: each version of the content gets its own Pinecone namespace. While the live deploy searches its namespace, a build with edited content fills a new one; publishing switches pages, answers and vectors together; pruning after publish keeps the live namespace plus the 4 most recently published; a CSS-only build reuses the namespace and embeds nothing." width="100%">
 </p>
 
-- `npm run build` runs `npm run sync:vectors` first ([scripts/sync-vectors.ts](scripts/sync-vectors.ts)), so every Netlify deploy syncs the content.
-- Each Pinecone record stores a hash of its text. New or edited chunks are upserted (Pinecone re-embeds them), deleted chunks are removed, and unchanged chunks cost no embedding tokens.
-- If the sync fails, the build fails, so a deploy can't ship with stale vectors.
-- In `npm run dev`, edits are synced on the next chat question, no restart needed.
-- Namespaces keep environments apart: production deploys use `production`, deploy previews and branch deploys use `preview`, local runs use `local` ([lib/namespace.ts](lib/namespace.ts)).
+- **One namespace per version of the content.** Each Netlify build syncs into a Pinecone namespace named after a hash of its chunks, e.g. `production-42f3b881` ([lib/namespace.ts](lib/namespace.ts)), and bakes that name into the server bundle. The live site keeps searching its own namespace until Netlify publishes the new deploy, which switches pages, precomputed answers and vectors in one step. A build that fails never changes what visitors are searching.
+- **Unchanged content embeds nothing.** A deploy that doesn't touch indexed content gets the same hash, reuses the namespace, and the sync upserts 0 chunks. A content change fills a new namespace in full: about 6K embedding tokens for the current 43 chunks, a deliberate tradeoff over re-embedding only changed chunks (see the design for when that would change).
+- **Self-healing.** The sync is a delta against the target namespace: each record stores a hash of its text, so a namespace left half-written by a cancelled build is completed by the next build with the same content.
+- **Pruned after publish.** A local build plugin ([plugins/prune-vectors](plugins/prune-vectors)) runs in Netlify's `onSuccess`, after the deploy is live. It stamps the live namespace as published, then keeps it plus the 4 most recently published in the same environment and deletes the rest. Leftovers of failed builds go first; a namespace a build may still be using (synced in the last hour, never published) is kept. Pruning errors never fail a deploy.
+- **Rollbacks.** Publishing an earlier deploy brings back its namespace too, if it's among the kept ones. Further back, its chat answers from keyword search over that deploy's own content, and those answers are not cached.
+- If the sync fails, the build fails, so a deploy can't ship with missing vectors.
+- In `npm run dev`, the editable `local` namespace is synced in place on the next chat question, no restart needed.
+
+## Caching answers
+
+Every live answer costs two Groq calls and a Pinecone search (about 2 s, measured on production). Most visitors click one of the four suggestion bubbles, so those answers would otherwise be recomputed on every click.
+
+- **Suggestion bubbles are answered at build time.** After `sync:vectors`, `npm run precompute:answers` ([scripts/precompute-answers.ts](scripts/precompute-answers.ts)) runs the agent once per suggestion and writes the results to `lib/generated/answers.json`, which ships in the page. Clicking a bubble shows the answer with no request at all. A suggestion the build couldn't answer well (Groq down, the fallback model used, not grounded) is left out and answers live.
+- **Repeated first questions hit a per-deploy cache.** A question asked with no earlier turns is looked up in a Netlify Blobs store scoped to the deploy ([lib/answer-store.ts](lib/answer-store.ts)), keyed by a hash of the normalised question (case, spacing, quotes and trailing punctuation don't matter). On a miss the agent runs, and a cacheable answer is written after the response has finished (`after()`), so it never delays the visitor.
+- **Every deploy starts empty.** The store belongs to the deploy, so a new version can never serve an answer computed by older content or code, and a rollback brings back that deploy's own answers.
+- **Only trustworthy answers are cached:** live, grounded, cited, from the main model, found with a working meaning search, and not a "the portfolio doesn't cover that" reply.
+- **Follow-ups are never cached,** because their answers depend on the conversation.
+- **Hits are honest and free.** The trace shows `Cache hit · build-time` or `Cache hit · runtime · Nms` before the original run's steps, and a hit doesn't count against the rate limit. Any cache error just means a live answer.
 
 ## Guardrails and failure modes
 

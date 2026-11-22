@@ -501,6 +501,34 @@ html.dialog-open { overflow: hidden; }
 .ex-out pre { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; white-space: pre-wrap; background: none; padding: 0; }
 .kicker { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
 
+/* Miso write-up widgets */
+.mw-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.mw-steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mw-steps li { margin: 0; }
+.mw-n { font-family: var(--font-mono); font-size: 12px; color: var(--sienna); margin-right: 4px; }
+.mw-pop { animation: pop .35s ease both; }
+.mw-layers { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mw-layers li { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+.mw-layers li small { font-family: var(--font-mono); font-size: 12px; font-weight: 400; }
+.mw-layers li.on { border: 1px solid var(--sand-2); background: var(--sand-soft); color: var(--ink); animation: chipIn .4s ease both; }
+.mw-layers li.off { border: 1px dashed var(--line-2); background: var(--bg-3); color: var(--faint); }
+.mw-readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin: 0; }
+.mw-readout div { border-left: 2px solid var(--sand-2); padding-left: 10px; }
+.mw-readout dt { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.mw-readout dd { margin: 2px 0 0; font-size: 17px; font-weight: 600; color: var(--ink); }
+.mw-note { margin: 0; color: var(--ink-3); }
+.mw-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.mw-table th { text-align: left; font-weight: 500; color: var(--muted); padding: 10px 12px 10px 0; width: 38%; vertical-align: top; }
+.mw-table td { padding: 10px 0; color: var(--ink); font-family: var(--font-mono); font-size: 13.5px; border-top: 1px solid var(--line); }
+.mw-table th { border-top: 1px solid var(--line); }
+.mw-table td.bad { color: #b91c1c; font-weight: 600; }
+.mw-bad + .mw-note { color: #b91c1c; font-weight: 600; }
+:root[data-theme="dark"] .mw-table td.bad, :root[data-theme="dark"] .mw-bad + .mw-note { color: #f87171; }
+/* Wide SVG diagrams in posts: scroll inside the figure on phones instead of shrinking text to nothing. */
+.diagram { margin: 20px 0 8px; overflow-x: auto; }
+.diagram img { display: block; width: 100%; min-width: 640px; height: auto; border-radius: 16px; }
+.diagram figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+
 /* blog list */
 .post-list { margin: 0; padding: 0; list-style: none; }
 .post-list li { border-top: 1px solid var(--line); }

@@ -1,11 +1,23 @@
-import { buildIndex, searchWithTrace, type Chunk, type SearchStep } from "./search-index";
+import { buildIndex, searchWithTrace, type Chunk, type DenseHealth, type SearchStep } from "./search-index";
 import { getProjects } from "./content";
-import { denseSearch, warmUp } from "./vector-store";
+import { warmUp } from "./vector-store";
 
 export type Step = { kind: "goal" | "think" | "tool" | "step" | "done" | "err"; label: string; detail: string };
 
 const subSteps = (steps: SearchStep[]): Step[] => steps.map((s) => ({ kind: "step", ...s }));
-export type AgentResult = { answer: string; sources: Array<{ title: string; href: string }>; trace: Step[]; grounded: boolean; mode: "live" | "demo" };
+/**
+ * `model` is the model that wrote the answer: MODEL only if every LLM round of the run used it, FALLBACK_MODEL
+ * if any round fell back on a rate limit, null when no LLM ran (retrieval-only answers).
+ */
+export type AgentResult = {
+  answer: string; sources: Array<{ title: string; href: string }>; trace: Step[]; grounded: boolean; mode: "live" | "demo"; model: string | null;
+  /** Meaning-search health over the run: ok only if at least one search ran and none was skipped or failed; hits = dense matches in total. */
+  search: { meaningOk: boolean; meaningHits: number };
+};
+/** Adds up meaning-search health over every search of one run. */
+function searchHealth(all: DenseHealth[]): AgentResult["search"] {
+  return { meaningOk: all.length > 0 && all.every((d) => d.ok), meaningHits: all.reduce((n, d) => n + d.hits, 0) };
+}
 export type Turn = { role: "user" | "assistant"; content: string };
 /** Live updates while the agent works: each trace step as it happens, and answer text as Groq streams it. */
 export type AgentEvents = { step?: (s: Step) => void; token?: (text: string) => void; reset?: () => void };
@@ -34,20 +46,23 @@ async function complete(body: Record<string, unknown>, apiKey: string, fetchImpl
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ ...body, model, ...reasoning(model) }),
     });
-  let res = await call(MODEL);
+  let model = MODEL;
+  let res = await call(model);
   if (res.status === 429 && FALLBACK_MODEL && FALLBACK_MODEL !== MODEL) {
     onFallback(FALLBACK_MODEL);
-    res = await call(FALLBACK_MODEL);
+    model = FALLBACK_MODEL;
+    res = await call(model);
   }
   if (res.status === 429) {
     const wait = Number(/try again in ([\d.]+)s/.exec(await res.clone().text())?.[1] ?? NaN);
     if (wait > 0 && wait <= 6) {
       await new Promise((r) => setTimeout(r, wait * 1000 + 250));
-      res = await call(MODEL);
+      model = MODEL;
+      res = await call(model);
     }
   }
   if (!res.ok) throw new Error(`groq ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  return res;
+  return { res, model };
 }
 
 type ToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
@@ -114,7 +129,8 @@ Staying on topic:
 - You only help with questions about Chiranjeev's work, projects, skills, experience and how to contact him, and about yourself, Miso.
 - For anything else (general knowledge, maths, writing letters, coding help), reply in one or two warm sentences as Miso: say you're here for questions about Chiranjeev's work, and suggest one question they could ask. Never reply with just "I can't help with that."
 - If they ask why you can't help, explain that: you're the assistant on his portfolio and only know what's on this site.
-- Questions about you (Miso): you're his Ragdoll cat and this chat's assistant; answer briefly and playfully without searching.
+- Questions about you as a character (who you are, whether you're a real cat, what you like): you're his Ragdoll cat and this chat's assistant; answer briefly and playfully without searching.
+- Questions about how this chat works (how you search, cache answers, handle failures, what it costs, its stack) are questions about Chiranjeev's work: call search_portfolio and cite, like any factual question.
 
 Style:
 - Third person about Chiranjeev. Warm, concise, a tiny bit playful (you are a cat), but professional. At most 110 words. Plain text: short paragraphs or up to 4 "- " bullets, no Markdown bold or headings.
@@ -164,6 +180,10 @@ export function finalize(raw: string, retrieved: Map<string, Chunk>): { answer: 
   return { answer, sources: valid };
 }
 
+/** True when an answer says the portfolio doesn't cover the question. Such answers show no sources and are never cached. */
+export const notCovered = (answer: string) =>
+  /couldn.t find|not sure|doesn.t cover|isn.t covered|no information|don.t have|does not (contain|include|mention|cover)|not available/i.test(answer);
+
 function dedupeSources(chunks: Chunk[]) {
   const seen = new Set<string>();
   return chunks.filter((c) => (seen.has(c.href) ? false : (seen.add(c.href), true))).slice(0, 4).map((c) => ({ title: c.title.split(":")[0], href: c.href }));
@@ -171,7 +191,8 @@ function dedupeSources(chunks: Chunk[]) {
 
 /** Retrieval-only answer, used when no model key is configured or the model is unavailable. */
 export async function retrievalAnswer(question: string, why: Step = { kind: "think", label: "No LLM configured", detail: "searching with the question as typed" }): Promise<AgentResult> {
-  const { chunks: hits, steps } = await searchWithTrace(question, 3);
+  const { chunks: hits, steps, dense } = await searchWithTrace(question, 3);
+  const search = searchHealth([dense]);
   const trace: Step[] = [
     why,
     { kind: "tool", label: `search_portfolio("${question.slice(0, 48)}")`, detail: hits.length ? `${hits.length} chunks returned` : "no matches" },
@@ -179,7 +200,7 @@ export async function retrievalAnswer(question: string, why: Step = { kind: "thi
   ];
   if (!hits.length) {
     trace.push({ kind: "done", label: "Nothing relevant found", detail: "suggested email instead" });
-    return { answer: "I couldn’t find that in Chiranjeev’s portfolio. You can email him at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "demo" };
+    return { answer: "I couldn’t find that in Chiranjeev’s portfolio. You can email him at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "demo", model: null, search };
   }
   // No model: quote the best passages, trimmed to whole sentences, with where they came from.
   const firstSentences = (t: string, max = 260) => {
@@ -191,7 +212,7 @@ export async function retrievalAnswer(question: string, why: Step = { kind: "thi
   };
   const answer = "Here’s what I found in his portfolio:\n\n" + hits.slice(0, 2).map((h) => { const name = h.title.split(":")[0]; const body = h.text.startsWith(h.title) ? h.text.slice(h.title.length).replace(/^\s*\([^)]*\)\.?\s*/, "") : h.text; return `${name.split(" — ")[0]} — ${firstSentences(body)}`; }).join("\n\n");
   trace.push({ kind: "done", label: `Answer grounded in ${hits.length} sources`, detail: hits.map((h) => h.title).join(", ") });
-  return { answer, sources: dedupeSources(hits), trace, grounded: true, mode: "demo" };
+  return { answer, sources: dedupeSources(hits), trace, grounded: true, mode: "demo", model: null, search };
 }
 
 export async function runAgent(question: string, history: Turn[], apiKey: string, fetchImpl: typeof fetch = fetch, events: AgentEvents = {}): Promise<AgentResult> {
@@ -205,15 +226,18 @@ export async function runAgent(question: string, history: Turn[], apiKey: string
   const messages: GroqMessage[] = [{ role: "system", content: SYSTEM }, ...history.slice(-8), { role: "user", content: question }];
 
   let searchesLeft = MAX_SEARCHES;
+  let answeredBy = MODEL;
+  const health: DenseHealth[] = [];
   for (let round = 0; round <= MAX_SEARCHES; round++) {
     const t0 = performance.now();
     const canSearch = searchesLeft > 0;
-    const res = await complete(
+    const { res, model } = await complete(
       { messages, tools: canSearch ? [searchTool()] : undefined, tool_choice: canSearch ? "auto" : undefined, temperature: 0.2, max_tokens: 1200, stream: true },
       apiKey,
       fetchImpl,
       (m) => add({ kind: "think", label: "Rate limit on the main model", detail: `retrying with ${m}` }),
     );
+    if (model !== MODEL) answeredBy = model;
     let streamed = false;
     const msg = await readCompletion(res, (text) => { streamed = true; events.token?.(text); });
     messages.push(msg);
@@ -234,10 +258,12 @@ export async function runAgent(question: string, history: Turn[], apiKey: string
           project = getProjects().some((p) => p.slug === args.project) ? args.project : undefined;
         } catch { query = ""; }
         const s0 = performance.now();
-        let { chunks: hits, steps } = await searchWithTrace(query || question, 4, denseSearch, project);
+        let { chunks: hits, steps, dense } = await searchWithTrace(query || question, 4, undefined, project);
+        health.push(dense);
         if (project && !hits.length) {
           const wide = await searchWithTrace(query || question);
           hits = wide.chunks;
+          health.push(wide.dense);
           steps = [...steps, { label: "Widened to all content", detail: `nothing in ${project}` }, ...wide.steps];
         }
         return { call, query, project, hits, steps, took: ms(s0) };
@@ -250,16 +276,16 @@ export async function runAgent(question: string, history: Turn[], apiKey: string
       continue;
     }
     const { answer, sources } = finalize(msg.content || "", retrieved);
-    const notCovered = /couldn.t find|not sure|doesn.t cover|isn.t covered|no information|don.t have|does not (contain|include|mention|cover)|not available/i.test(answer);
+    const uncovered = notCovered(answer);
     add({ kind: "done", label: `Answer grounded in ${sources.length} source${sources.length === 1 ? "" : "s"} · written in ${ms(t0)}`, detail: sources.map((s) => s.title).join(", ") || "—" });
     if (!sources.length && retrieved.size === 0) {
-      return { answer: answer || "I’m not sure about that one — please email Chiranjeev at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "live" };
+      return { answer: answer || "I’m not sure about that one — please email Chiranjeev at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "live", model: answeredBy, search: searchHealth(health) };
     }
     // Link what the answer cited. A confident answer that forgot its citations (the smaller fallback model
     // often does) still shows the top results; an answer saying "not covered" shows none, because the search
     // can match the right word with the wrong meaning ("resume" a paused agent run).
-    const shown = sources.length ? sources : notCovered ? [] : Array.from(retrieved.values()).slice(0, 2);
-    return { answer, sources: dedupeSources(shown), trace, grounded: shown.length > 0 && !notCovered, mode: "live" };
+    const shown = sources.length ? sources : uncovered ? [] : Array.from(retrieved.values()).slice(0, 2);
+    return { answer, sources: dedupeSources(shown), trace, grounded: shown.length > 0 && !uncovered, mode: "live", model: answeredBy, search: searchHealth(health) };
   }
   throw new Error("agent did not finish");
 }

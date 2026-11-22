@@ -13,6 +13,8 @@ const strip = (md: string) =>
   md
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/```[\s\S]*?```/g, "")
+    // Raw HTML in posts (figures, pictures) is layout, not content: keep only the text between tags.
+    .replace(/<[^>]+>/g, " ")
     .replace(/\|/g, " ")
     .replace(/[#*_`>[\]]/g, "")
     .replace(/\s+/g, " ")
@@ -156,7 +158,14 @@ const list = (xs: Array<{ title: string }>, n = 3) => xs.slice(0, n).map((x) => 
  * each stage for the agent trace. Without a Pinecone key, or if Pinecone is unreachable, it uses
  * keyword search alone so the chat keeps working.
  */
-export async function searchWithTrace(query: string, k = 4, dense: Dense = denseSearch, project?: string): Promise<{ chunks: Chunk[]; steps: SearchStep[] }> {
+/** Whether meaning search worked for one search: `ok` is false when it was skipped (no key) or errored. */
+export type DenseHealth = { ok: boolean; hits: number };
+
+let defaultDense: Dense = denseSearch;
+/** Evals only: swap the meaning search the agent uses by default (no argument restores Pinecone). */
+export function useDenseSearch(d?: Dense) { defaultDense = d ?? denseSearch; }
+
+export async function searchWithTrace(query: string, k = 4, dense: Dense = defaultDense, project?: string): Promise<{ chunks: Chunk[]; steps: SearchStep[]; dense: DenseHealth }> {
   const docs = buildIndex();
   const keyword = keywordSearch(query, 10, project);
   const steps: SearchStep[] = [];
@@ -165,7 +174,7 @@ export async function searchWithTrace(query: string, k = 4, dense: Dense = dense
 
   if (dense === denseSearch && !vectorSearchEnabled()) {
     steps.push({ label: "Meaning search skipped", detail: "no PINECONE_API_KEY · keyword only" }, keywordStep);
-    return { chunks: keyword.slice(0, k), steps };
+    return { chunks: keyword.slice(0, k), steps, dense: { ok: false, hits: 0 } };
   }
   try {
     if (dense === denseSearch && process.env.NODE_ENV !== "production") await syncIfChanged(docs);
@@ -182,11 +191,11 @@ export async function searchWithTrace(query: string, k = 4, dense: Dense = dense
     const chunks = fuse([semantic, keyword], k).map((id) => byId.get(id)!).filter(Boolean);
     const both = chunks.filter((c) => semantic.some((h) => h.id === c.id) && keyword.some((h) => h.id === c.id)).length;
     steps.push({ label: "Merged · reciprocal rank fusion", detail: chunks.length ? `top ${chunks.length}${both ? ` (${both} found by both)` : ""} · ${list(chunks, 4)}` : "no results" });
-    return { chunks, steps };
+    return { chunks, steps, dense: { ok: true, hits: semantic.length } };
   } catch (err) {
     console.warn("[search] Pinecone unavailable, using keyword search:", (err as Error).message);
     steps.push({ label: "Meaning search unavailable", detail: `${short((err as Error).message)} · keyword only` }, keywordStep);
-    return { chunks: keyword.slice(0, k), steps };
+    return { chunks: keyword.slice(0, k), steps, dense: { ok: false, hits: 0 } };
   }
 }
 

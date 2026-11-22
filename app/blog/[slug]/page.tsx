@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate, getPost, getPosts, getProject, site, tags } from "@/lib/content";
-import { headings, renderMarkdown } from "@/lib/markdown";
+import { headings, renderMarkdown, splitWidgets } from "@/lib/markdown";
+import { Widget } from "@/components/widgets/Widgets";
 import { JsonLd, breadcrumbLd, postLd } from "@/components/JsonLd";
 
 export const dynamicParams = false;
@@ -43,7 +44,10 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       </header>
       <div className="article-layout" style={{ marginTop: 40 }}>
         <div className="article-main">
-          <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />
+          {/* Same widget markers as case studies: <!-- widget:name --> places an interactive diagram. */}
+          <div className="prose">
+            {splitWidgets(html).map((part, i) => ("widget" in part ? <Widget key={i} name={part.widget} /> : <div key={i} dangerouslySetInnerHTML={{ __html: part.html }} />))}
+          </div>
           {project && (
             <p style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid var(--line)" }}>
               This post comes from <Link href={project.caseStudy ? `/projects/${project.slug}` : "/#work"}>{project.title}</Link>.

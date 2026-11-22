@@ -1,5 +1,7 @@
-import { NextResponse } from "next/server";
-import { MODEL, retrievalAnswer, runAgent, type Turn } from "@/lib/agent";
+import { NextResponse, after } from "next/server";
+import { MODEL, retrievalAnswer, runAgent, type AgentResult, type Step, type Turn } from "@/lib/agent";
+import { cachedTrace } from "@/lib/answer-cache";
+import { answerStore, isCacheable, questionKey } from "@/lib/answer-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,30 +56,68 @@ export async function POST(req: Request) {
         .map((t) => ({ role: t.role, content: t.content.slice(0, 1200) }))
     : [];
 
+  // First questions (no history) can be answered from this deploy's cache. Follow-ups depend on the
+  // conversation, so they never read or write it. The lookup comes before the rate limit: a hit costs
+  // no LLM or search quota, so it doesn't count against the visitor.
+  const store = history.length === 0 ? answerStore() : null;
+  const cacheKey = store ? questionKey(question) : "";
+  let cacheStep: Step | null = null;
+  if (store) {
+    const t0 = performance.now();
+    const hit = await store.get(cacheKey);
+    const ms = Math.round(performance.now() - t0);
+    if (hit) return ndjson([{ type: "done", result: { ...hit.result, trace: cachedTrace(hit, "runtime", ms) } }]);
+    cacheStep = { kind: "think", label: `Cache miss · ${ms}ms`, detail: "no stored answer for this question in this deploy, so the agent runs" };
+  }
+
   if (limited(clientIp(req))) return NextResponse.json({ error: "rate limited" }, { status: 429 });
 
   const key = process.env.GROQ_API_KEY;
   if (!key) return NextResponse.json(await retrievalAnswer(question));
+
+  // The cache write runs after the response has finished (after() keeps the function alive for it), so it
+  // never delays the answer: the client only completes when the stream closes.
+  let finish!: (r: AgentResult | null) => void;
+  const finished = new Promise<AgentResult | null>((res) => (finish = res));
+  if (store) {
+    const write = async () => {
+      const result = await finished;
+      if (result && isCacheable(result)) await store.set(cacheKey, { result, model: result.model ?? MODEL, createdAt: new Date().toISOString() });
+    };
+    try { after(write); } catch { void write(); } // outside a Next request (evals): write in the background
+  }
+
   // Stream NDJSON: trace steps as they happen, answer tokens as Groq writes them, then the final result.
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: object) => controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      let cacheable: AgentResult | null = null;
       try {
+        if (cacheStep) send({ type: "step", step: cacheStep });
         const result = await runAgent(question, history, key, fetch, {
           step: (step) => send({ type: "step", step }),
           token: (text) => send({ type: "token", text }),
           reset: () => send({ type: "reset" }),
         });
-        send({ type: "done", result });
+        // The miss step is shown, but not stored: a later cache hit replays only the agent's own steps.
+        send({ type: "done", result: cacheStep ? { ...result, trace: [cacheStep, ...result.trace] } : result });
+        cacheable = result;
       } catch (e) {
         console.error("chat agent failed, falling back to retrieval:", (e as Error).message);
         const status = /groq (\d+)/.exec((e as Error).message)?.[1];
-        send({ type: "reset" });
-        send({ type: "done", result: await retrievalAnswer(question, { kind: "err", label: `LLM call failed${status ? ` (Groq ${status})` : ""}`, detail: "answering from search results only, with the question as typed" }) });
+        try {
+          send({ type: "reset" });
+          send({ type: "done", result: await retrievalAnswer(question, { kind: "err", label: `LLM call failed${status ? ` (Groq ${status})` : ""}`, detail: "answering from search results only, with the question as typed" }) });
+        } catch { /* the visitor left; nothing to send */ }
+      } finally {
+        try { controller.close(); } catch { /* already closed by a disconnect */ }
+        finish(cacheable);
       }
-      controller.close();
     },
   });
-  return new Response(stream, { headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" } });
+  return new Response(stream, { headers: NDJSON_HEADERS });
 }
+
+const NDJSON_HEADERS = { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" };
+const ndjson = (events: object[]) => new Response(events.map((e) => JSON.stringify(e)).join("\n") + "\n", { headers: NDJSON_HEADERS });
