@@ -69,10 +69,12 @@
 - [x] 6.4 Add an offline check: chunk ids are still unique with the new project, and the `miso` profile chunk and the `miso-chat` summary chunk both exist.
 - [x] 6.5 Run `npm run eval:chat` with the keys set and confirm that every check passes, including the existing retrieval golden set (no other project displaced). Record the output in `evidence/eval.txt`.
 
+- [x] 6.6 (Added during final testing.) Fix a hallucination the eval caught: asked "What's his favourite pizza?", the model sometimes skipped the search and invented an answer (1 in 3 runs on `main`, 2 in 3 on this branch). Added a system-prompt rule that personal facts and preferences are factual questions: search first, never guess or joke one. After the fix: 6/6 runs searched and declined, and all 110 eval checks pass, including the persona questions that must not search.
+
 ## 7. Build and verify
 
 - [x] 7.1 Run `npm run build`. It must pass: schema, tags and widget-marker validation, the vector sync into the new namespace, and the precomputed bubble answers.
-- [ ] 7.2 Read the regenerated `lib/generated/answers.json` and confirm that no bubble answer links to `/blog/how-miso-answers` or shows raw citation markers.
+- [x] 7.2 Read the regenerated `lib/generated/answers.json` and confirm that no bubble answer links to `/blog/how-miso-answers` or shows raw citation markers.
 - [x] 7.3 Check the home grid. On "All", the card is third after InvoiceChaser in the two-column layout. On the AI engineering tab, five cards show in the featured layout. Check both at phone width.
 - [x] 7.4 Review `git diff` and commit in focused commits: content, cover, chat link, redirect, agent and evals.
 

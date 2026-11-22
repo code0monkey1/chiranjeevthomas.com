@@ -13,10 +13,10 @@
 Retrieval (hybrid: Pinecone + keyword)
 ✓ How does InvoiceChaser keep a human in the loop? → /projects/invoicechaser  [invoicechaser, invoicechaser-2, skills-agents-orchestration, agent-observability-0]
 ✓ What did he build at Grabbit with LLMs? → /projects/grabbit-llm-search  [grabbit-llm-search, grabbit-llm-search-1, skills-llms-prompting, grabbit-llm-search-0]
-✓ Has he built a RAG pipeline with reranking? → /projects/agentic-rag  [agentic-rag, skills-retrieval-rag, agentic-rag-2, profile]
+✓ Has he built a RAG pipeline with reranking? → /projects/agentic-rag  [agentic-rag, skills-retrieval-rag, agentic-rag-3, agentic-rag-2]
 ✓ Where does he work now? → /#experience  [contact, job-grabbit, profile, miso-chat-17]
-✓ How can I contact him? → mailto:  [contact, miso-chat-20, agent-observability-1, agent-observability-0]
-✓ Does he know LangGraph? → /#skills | /projects/invoicechaser  [skills-agents-orchestration, profile, invoicechaser, miso-chat-18]
+✓ How can I contact him? → mailto:  [contact, post-how-miso-answers-13, agent-observability-1, agent-observability-0]
+✓ Does he know LangGraph? → /#skills | /projects/invoicechaser  [skills-agents-orchestration, profile, invoicechaser, projects-overview]
 
 Vector sync (fake Pinecone)
 ✓ first sync upserts every chunk (65/65)
@@ -113,7 +113,7 @@ Meaning-search health
 ✓ a throwing cache read is treated as a miss
 ✓ a throwing cache write does not throw
 [answer-cache] read failed, answering live: Error: read timed out after 1500ms
-✓ a hanging cache read gives up and misses (1501ms)
+✓ a hanging cache read gives up and misses (1503ms)
 ✓ a hanging cache write gives up (4002ms)
 ✓ no Netlify Blobs environment (local, evals) → cache off
 
@@ -127,8 +127,8 @@ Chat route with an in-memory cache store
 ✓ uncached questions still count against the rate limit
 
 Live semantic retrieval (Pinecone)
-✓ by meaning: How does he keep tabs on what an AI is doing behind the scenes? → /projects/agent-observability  [agent-observability-0 0.26, agent-observability-1 0.25, projects-overview 0.25, miso-chat-17 0.24, agent-observability 0.24, agent-observability-2 0.23]
-✓ by meaning: Does he understand meaning-based retrieval? → /projects/agentic-rag  [skills-retrieval-rag 0.25, miso-chat-1 0.22, agentic-rag-0 0.22, miso-chat-3 0.21, agentic-rag-2 0.20, miso-chat-6 0.20]
+✓ by meaning: How does he keep tabs on what an AI is doing behind the scenes? → /projects/agent-observability  [agent-observability-0 0.26, agent-observability-1 0.25, projects-overview 0.25, agent-observability 0.24, agent-observability-2 0.23, skills-agents-orchestration 0.22]
+✓ by meaning: Does he understand meaning-based retrieval? → /projects/agentic-rag  [skills-retrieval-rag 0.25, agentic-rag-0 0.22, post-how-miso-answers-2 0.21, agentic-rag-2 0.20, agentic-rag 0.16]
 ✓ monitoring and tracing AI agent runs → /projects/agent-observability  [agent-observability, agent-observability-1, projects-overview, skills-evals-observability]
 ✓ Pinecone project filter returns only that project [post-langchain-tool-gating-3, invoicechaser-4, invoicechaser-1, invoicechaser-2]
 ✓ off-topic question retrieves nothing []
@@ -141,18 +141,16 @@ Live model
 
 Live conversation
 ✓ follow-up "it" resolves to InvoiceChaser [/projects/invoicechaser]
-✓ off-topic gets an in-character redirect: "I’m here to help with questions about Chiranjeev’s work, projects, and experience.  
-How a"
-✓ "why?" is explained, not refused: "I’m the assistant on Chiranjeev’s portfolio site, so I only know what’s on this site.  
-If"
-✓ persona question "Who are you?" answered without searching: "I’m Miso, Chiranjeev Thomas’s fluffy Ragdoll cat and the fri"
-✓ persona question "Are you a real cat?" answered without searching: "I’m Chiranjeev’s Ragdoll cat and the friendly assistant on h"
+✓ off-topic gets an in-character redirect: "I’m here to chat about Chiranjeev’s projects, skills, and experience (or about me, his flu"
+✓ "why?" is explained, not refused: "I’m the friendly Ragdoll assistant for Chiranjeev’s portfolio, so I only have information "
+✓ persona question "Who are you?" answered without searching: "Miso here - the friendly Ragdoll cat who doubles as the assi"
+✓ persona question "Are you a real cat?" answered without searching: "Miso is a virtual Ragdoll cat created to be the friendly fac"
 ✓ "How does this chat find its answers?" searches the portfolio (1 searches)
 ✓ "How does Miso cache answers?" cites the case study [/projects/miso-chat]
-✓ "Pinecone down" answer describes the keyword fallback [/projects/miso-chat]: "If Pinecone is unavailable, Miso falls back to keyword-only search. The Netlify "
+✓ "Pinecone down" answer describes the keyword fallback [/projects/miso-chat]: "If Pinecone (the vector-search service) is unavailable, Miso falls back to keywo"
 ✓ "What happens to Miso if Pinecone goes down?" is never scoped to another project and cites the case study [/projects/miso-chat]
 ✓ "How fast is a cached answer?" uses only the case study's figures [60ms, 0.4s, 1.5s]
-✓ uncovered personal fact is declined, not invented: "I’m sorry, but the portfolio does not mention his favourite pizza. You"
-✓ knows about Miso: "Miso is Chiranjeev’s Ragdoll cat and the friendly assistant on his portfolio site. He’s th"
+✓ uncovered personal fact is declined, not invented: "I’m sorry, but the portfolio doesn’t mention Chiranjeev’s favourite pi"
+✓ knows about Miso: "Yes-Chiranjeev lives with Miso, his Ragdoll cat who also serves as the chat assistant on t"
 
 All passed
