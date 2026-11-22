@@ -3,7 +3,7 @@
  * answer instantly with no request. Runs after sync:vectors, so it searches this build's content.
  *
  * Writes lib/generated/answers.json, which ships in the client bundle. Only answers that pass the same
- * rule as the runtime cache (isCacheable) are kept; any failure just leaves that bubble to answer live.
+ * rule as the runtime cache (cacheSkipReason) are kept; any failure just leaves that bubble to answer live.
  * Never fails the build.
  *
  *   --skip-llm   write empty suggestions without calling the model (dev, evals, type-checking)
@@ -37,22 +37,26 @@ async function main() {
   const { pinBuildNamespace } = await import("../lib/build-namespace");
   console.log(`precompute:answers: searching ${pinBuildNamespace()}`);
   const { runAgent, MODEL } = await import("../lib/agent");
-  const { isCacheable } = await import("../lib/answer-store");
+  const { cacheSkipReason, isCacheable } = await import("../lib/answer-store");
   for (const [i, q] of SUGGESTIONS.entries()) {
     if (i > 0) await new Promise((r) => setTimeout(r, GAP_MS));
     const t0 = Date.now();
     try {
       let r = await runAgent(q, [], key);
-      // A busy minute can push a run onto the fallback model, whose answers aren't cached. Try once more.
-      if (!isCacheable(r) && r.model !== MODEL) {
+      // A busy minute can push a run onto the fallback model. Try once more for a main-model answer.
+      if (r.model !== MODEL) {
         await new Promise((res) => setTimeout(res, 20_000));
-        r = await runAgent(q, [], key);
+        const retry = await runAgent(q, [], key);
+        // Keep the retry if it's a cacheable main-model answer, else whichever run is cacheable (the retry wins ties).
+        if (isCacheable(retry) && retry.model === MODEL) r = retry;
+        else if (isCacheable(retry) || !isCacheable(r)) r = retry;
       }
-      if (isCacheable(r)) {
+      const reason = cacheSkipReason(r);
+      if (!reason) {
         suggestions[normalizeQuestion(q)] = { result: r, model: r.model, createdAt: new Date().toISOString() };
-        console.log(`precompute:answers: ✓ "${q}" (${Date.now() - t0}ms, ${r.sources.length} sources)`);
+        console.log(`precompute:answers: ✓ "${q}" (${Date.now() - t0}ms, ${r.sources.length} sources, ${r.model})`);
       } else {
-        console.warn(`precompute:answers: ✗ "${q}" not cacheable (mode ${r.mode}, grounded ${r.grounded}, model ${r.model}), answers live`);
+        console.warn(`precompute:answers: ✗ "${q}" not cacheable (${reason}, model ${r.model}), answers live`);
       }
     } catch (err) {
       console.warn(`precompute:answers: ✗ "${q}" failed (${(err as Error).message.slice(0, 120)}), answers live`);
