@@ -5,15 +5,18 @@
 const DAILY_LIMIT = () => Number(process.env.CHAT_DAILY_LIMIT || 30);
 /** Ceiling across all visitors (per function instance), so one abuser can't burn the free Groq/Pinecone quota. */
 const GLOBAL_DAILY_LIMIT = () => Number(process.env.CHAT_GLOBAL_DAILY_LIMIT || 500);
+/** Background upgrade runs per instance per day, separate from visitor questions. */
+const UPGRADE_DAILY_LIMIT = () => Number(process.env.CHAT_UPGRADE_DAILY_LIMIT || 50);
 const MAX_TRACKED_IPS = 5000;
 
 let today = "";
 let total = 0;
+let upgrades = 0;
 const hits = new Map<string, number>();
 
 function rollDay() {
   const day = new Date().toISOString().slice(0, 10);
-  if (day !== today) { today = day; total = 0; hits.clear(); } // drop yesterday's counters
+  if (day !== today) { today = day; total = 0; upgrades = 0; hits.clear(); } // drop yesterday's counters
 }
 
 /** Counts one visitor question; true when the visitor or the instance is over its limit. */
@@ -28,13 +31,16 @@ export function limited(ip: string): boolean {
   return false;
 }
 
-/** Counts one run against the instance-wide total only (background upgrades, which no visitor pays for). False when over the ceiling. */
-export function takeGlobal(): boolean {
+/**
+ * Background upgrades get their own small daily budget, so free cache hits can never use up the visitors'
+ * shared quota. No visitor pays for them. False once the budget is spent, or the visitor ceiling is already reached.
+ */
+export function takeUpgrade(): boolean {
   rollDay();
-  if (total >= GLOBAL_DAILY_LIMIT()) return false;
-  total += 1;
+  if (total >= GLOBAL_DAILY_LIMIT() || upgrades >= UPGRADE_DAILY_LIMIT()) return false;
+  upgrades += 1;
   return true;
 }
 
 /** Evals only: forget all counters. */
-export function resetLimiter() { today = ""; total = 0; hits.clear(); }
+export function resetLimiter() { today = ""; total = 0; upgrades = 0; hits.clear(); }

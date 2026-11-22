@@ -476,14 +476,15 @@ console.log("\nChat route with an in-memory cache store");
   notCoveredNext = false;
   console.info = realInfo;
 
-  // The upgrade budget: takeGlobal counts against the global daily limit without any per-IP counting.
+  // The upgrade budget is separate from visitor questions: spending it never uses visitor quota.
   {
-    const { takeGlobal, resetLimiter } = await import("../lib/chat-limiter");
-    const realGlobal = process.env.CHAT_GLOBAL_DAILY_LIMIT;
-    process.env.CHAT_GLOBAL_DAILY_LIMIT = "1";
+    const { takeUpgrade, limited, resetLimiter } = await import("../lib/chat-limiter");
+    const saved = [process.env.CHAT_UPGRADE_DAILY_LIMIT, process.env.CHAT_DAILY_LIMIT];
+    process.env.CHAT_UPGRADE_DAILY_LIMIT = "1"; process.env.CHAT_DAILY_LIMIT = "1";
     resetLimiter();
-    check(takeGlobal() === true && takeGlobal() === false, "takeGlobal refuses once the global daily limit is used up");
-    if (realGlobal === undefined) delete process.env.CHAT_GLOBAL_DAILY_LIMIT; else process.env.CHAT_GLOBAL_DAILY_LIMIT = realGlobal;
+    check(takeUpgrade() === true && takeUpgrade() === false, "takeUpgrade refuses once the upgrade budget is used up");
+    check(limited("9.9.9.9") === false, "…and spending it leaves the visitor quota untouched");
+    for (const [k, v] of [["CHAT_UPGRADE_DAILY_LIMIT", saved[0]], ["CHAT_DAILY_LIMIT", saved[1]]] as const) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
     resetLimiter();
   }
 

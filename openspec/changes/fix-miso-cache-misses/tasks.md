@@ -11,8 +11,8 @@
 
 ## 3. Background upgrade on a fallback hit
 
-- [x] 3.1 Add `takeGlobal()` to the route's limiter: it counts one against `GLOBAL_DAILY_LIMIT` without per-IP counting. Verify: an eval with the limit set to 1 sees the second `takeGlobal()` refused.
-- [x] 3.2 On a hit whose `model !== MODEL`: return the cached answer as today, and if the entry is due (`upgradeAfter`, or `createdAt` + 60 s), not in flight on this instance, and `takeGlobal()` allows it, schedule the upgrade in `after()` (write the claim with `upgradeAfter` = now + 10 min, run the agent silently, overwrite only on a cacheable `MODEL` result). Verify with evals using the mocked Groq fetch and the in-memory store: (a) the hit response comes back unchanged, (b) when due, a `MODEL` mock run replaces the entry, (c) a still-429 mock run leaves the entry and sets `upgradeAfter`, (d) an entry inside its cooldown triggers no agent call.
+- [x] 3.1 Add `takeUpgrade()` to the limiter: a separate small daily budget (`CHAT_UPGRADE_DAILY_LIMIT`, default 50) that never touches visitor counters. Verify: an eval with the limit set to 1 sees the second `takeUpgrade()` refused.
+- [x] 3.2 On a hit whose `model !== MODEL`: return the cached answer as today, and if the entry is due (`upgradeAfter`, or `createdAt` + 60 s), not in flight on this instance, and `takeUpgrade()` allows it, schedule the upgrade in `after()` (write the claim with `upgradeAfter` = now + 10 min, run the agent silently, overwrite only on a cacheable `MODEL` result). Verify with evals using the mocked Groq fetch and the in-memory store: (a) the hit response comes back unchanged, (b) when due, a `MODEL` mock run replaces the entry, (c) a still-429 mock run leaves the entry and sets `upgradeAfter`, (d) an entry inside its cooldown triggers no agent call.
 - [x] 3.3 Update the README chat or cache section so it says fallback answers are cached and upgraded in the background. Verify: the README describes the cooldown and the no-downgrade rule.
 
 ## 4. Build-time precompute

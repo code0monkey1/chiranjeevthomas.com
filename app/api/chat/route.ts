@@ -2,7 +2,7 @@ import { NextResponse, after } from "next/server";
 import { MODEL, retrievalAnswer, runAgent, type AgentResult, type Step, type Turn } from "@/lib/agent";
 import { cachedTrace, type CachedAnswer } from "@/lib/answer-cache";
 import { answerStore, cacheSkipReason, questionKey, type AnswerStore } from "@/lib/answer-store";
-import { limited, takeGlobal } from "@/lib/chat-limiter";
+import { limited, takeUpgrade } from "@/lib/chat-limiter";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +36,7 @@ const afterResponse = (job: () => Promise<void>) => { try { after(job); } catch 
 function maybeUpgrade(store: AnswerStore, cacheKey: string, question: string, hit: CachedAnswer, groqKey: string | undefined) {
   if (hit.model === MODEL || !groqKey || upgrading.has(cacheKey)) return;
   const dueAt = hit.upgradeAfter ? Date.parse(hit.upgradeAfter) : Date.parse(hit.createdAt) + FIRST_UPGRADE_MS;
-  if (!(Date.now() >= dueAt) || !takeGlobal()) return;
+  if (!(Date.now() >= dueAt) || !takeUpgrade()) return;
   upgrading.add(cacheKey);
   afterResponse(async () => {
     try {

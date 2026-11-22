@@ -55,7 +55,7 @@ hit and hit.model !== MODEL:
      })
 ```
 
-- **Budget:** the run counts one against the instance's global daily total (`GLOBAL_DAILY_LIMIT`), through a new `takeGlobal()` that doesn't touch per-IP counters. The visitor who triggered it isn't charged, which matches "hits don't count against limits". The cooldown claim caps each question at one upgrade run per 10 minutes.
+- **Budget:** the run draws on its own small daily budget (`CHAT_UPGRADE_DAILY_LIMIT`, default 50) through `takeUpgrade()`, which never touches visitor counters. The visitor who triggered it isn't charged, which matches "hits don't count against limits". The cooldown claim caps each question at one upgrade run per 10 minutes.
 - **Why `after()`:** it is already used for writes, and the installed adapter (5.16.4) maps it to Netlify `context.waitUntil`. The hit response streams and closes before the upgrade starts.
 - **Alternative: serve a fallback hit as a miss and run live.** Rejected: that's today's bug with extra steps. Every repeat waits on the model and spends quota.
 - **Alternative: never upgrade.** Rejected by the user: they chose "cache, upgrade later".
