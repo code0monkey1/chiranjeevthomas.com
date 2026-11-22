@@ -130,7 +130,7 @@ The chat opens from a one-line "Ask Miso" bar in a modal dialog, so it never pus
 A cache for Miso can't key on the question alone. Three things make it harder than caching an API response:
 
 - **Answers depend on the conversation.** "What stack did it use?" means something different after each project. So Miso only caches first questions, asked with no history. The suggestion bubbles are the exception: they stand on their own, so their answer is the same whatever came before.
-- **A bad answer would be frozen.** A model on a busy minute falls back to a smaller model, and a search can come back thin. A cache would replay those for everyone. So only answers that are live, grounded, cited, from the main model and found with a working meaning search are stored.
+- **A bad answer would be frozen.** A model on a busy minute falls back to a smaller model, and a search can come back thin. A cache would replay those for everyone. So only answers that are live, grounded, cited and found with a working meaning search are stored, and each entry records which model wrote it. Fallback-model answers are stored too, then upgraded (see below).
 - **The trace has to stay honest.** Miso shows its work in an agent trace. A cached answer must not pretend to be fresh, so the trace says "Cache hit", which cache, and how long the lookup took, before replaying the original run's steps labelled as that run.
 
 ## Five ways Miso could cache answers
@@ -158,6 +158,12 @@ That timeout exists because of a real failure. On my first deploy preview, typed
 Caching also froze a bug that had always been there. The first production build precomputed a bubble answer that showed raw citation markers like `[job‑grabbit]`: the model had written the ids with non-breaking hyphens, which the citation parser didn't recognise. Before caching, that answer would have been one visitor's bad luck. Precomputed, every visitor saw it. The parser now normalises Unicode hyphens, and an answer that still shows citation markers is never cached.
 
 <figure class="diagram"><img src="/media/miso-cache-hit-trace.jpg" alt="Miso's chat on production answering a repeated question from the cache: the agent trace shows 'Cache hit · runtime · 72ms', the original run below it, and 'done in 0.4s'." loading="lazy"><figcaption>A repeated question on production: found in the cache in 72 ms, answered in 0.4 s.</figcaption></figure>
+
+## Fallback answers: cache now, upgrade later
+
+At first, Miso cached only answers from the main model. On Groq's free tier that turned out to be too strict: a busy minute sends a run to the smaller fallback model, so the same first question kept missing the cache exactly when the main model was busiest, which is when a cache matters most.
+
+Now a grounded, cited fallback-model answer is cached too. A hit on one is served at once, and if it is older than 60 seconds, one silent run on the main model replaces it when that run is itself cacheable. A failed attempt keeps the entry and waits 10 minutes before trying again. A main-model entry is never replaced by a fallback answer. Upgrade runs have their own budget of 50 a day per function instance, so free cache hits can never use up visitors' quota. The build does the same for the bubbles: it prefers the main model, retries once after 20 seconds, and keeps a grounded fallback answer rather than dropping the bubble to live. Every skipped cache write logs one line with the reason, so a future "always misses" report can be diagnosed from the function logs.
 
 ## The cache key decision I reversed
 
@@ -187,7 +193,7 @@ The fix moves the vectors inside the boundary. Each build syncs into a namespace
 
 ## The tradeoff: Miso re-embeds everything when content changes
 
-Per-version namespaces cost something I chose to pay: a content change now embeds Miso's whole corpus: 65 chunks and about 11.5K tokens with this case study included (43 chunks, about 6K tokens, before the Miso write-up existed) instead of only the changed chunks. Copying unchanged vectors forward would avoid that, but Pinecone's current API doesn't return the vectors it derives from text. A design with one immutable record per chunk version plus a per-deploy manifest would avoid it too, at the cost of tracking which records each kept deploy still references. At this size, the simple version wins. I'd switch if a full embed ever cost more than 10% of the monthly embedding allowance or added more than 10 seconds to a build.
+Per-version namespaces cost something I chose to pay: a content change now embeds Miso's whole corpus: 66 chunks and about 12K tokens with this case study included (43 chunks, about 6K tokens, before the Miso write-up existed) instead of only the changed chunks. Copying unchanged vectors forward would avoid that, but Pinecone's current API doesn't return the vectors it derives from text. A design with one immutable record per chunk version plus a per-deploy manifest would avoid it too, at the cost of tracking which records each kept deploy still references. At this size, the simple version wins. I'd switch if a full embed ever cost more than 10% of the monthly embedding allowance or added more than 10 seconds to a build.
 
 ## Pruning old vector namespaces, and a trap I nearly shipped
 
@@ -201,7 +207,7 @@ So each namespace carries two stamps. `syncedAt` only protects a namespace a bui
 
 | Situation | What Miso does |
 |---|---|
-| Groq rate limit | Retries on the smaller model (`gpt-oss-20b`), then waits the seconds Groq asks for and retries once. Those answers are shown but never cached. |
+| Groq rate limit | Retries on the smaller model (`gpt-oss-20b`), then waits the seconds Groq asks for and retries once. A grounded, cited fallback answer is cached and later replaced in the background by a main-model one. |
 | Groq down, or no key | Retrieval only: quotes the best passages from the same hybrid search. |
 | Pinecone down | Keyword search answers alone. Not cached, because meaning search didn't run. |
 | Answer cache slow or down | Gives up after 1.5 s and answers live. A failed write is logged and ignored. |
@@ -237,7 +243,7 @@ Here is what Miso's caching changed, measured before and after:
 | New first question | about 2.0 s | about 2.0 s, plus a cache lookup of 15 to 100 ms |
 | Build and deploy time | 65 s | 88 s: the 23 s buys precomputed bubbles |
 | Deploy with unchanged content | vectors re-checked in place | same namespace, 0 chunks embedded |
-| Deploy with changed content | only changed chunks embedded, into the live namespace | the whole corpus (about 11.5K tokens now) into a new namespace, live untouched until publish |
+| Deploy with changed content | only changed chunks embedded, into the live namespace | the whole corpus (about 12K tokens now) into a new namespace, live untouched until publish |
 
 All figures are as of November 2026, measured on this site's production deploys before and after the change.
 

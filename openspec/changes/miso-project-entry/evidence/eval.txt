@@ -11,21 +11,22 @@
 > tsx scripts/eval-chat.ts
 
 Retrieval (hybrid: Pinecone + keyword)
-✓ How does InvoiceChaser keep a human in the loop? → /projects/invoicechaser  [invoicechaser, invoicechaser-2, skills-agents-orchestration, agent-observability-0]
+[search] synced content to Pinecone: 11 upserted, 0 deleted
+✓ How does InvoiceChaser keep a human in the loop? → /projects/invoicechaser  [invoicechaser, invoicechaser-2, skills-agents-orchestration, agent-observability-1]
 ✓ What did he build at Grabbit with LLMs? → /projects/grabbit-llm-search  [grabbit-llm-search, grabbit-llm-search-1, skills-llms-prompting, grabbit-llm-search-0]
-✓ Has he built a RAG pipeline with reranking? → /projects/agentic-rag  [agentic-rag, skills-retrieval-rag, agentic-rag-3, agentic-rag-2]
-✓ Where does he work now? → /#experience  [contact, job-grabbit, profile, miso-chat-17]
-✓ How can I contact him? → mailto:  [contact, post-how-miso-answers-13, agent-observability-1, agent-observability-0]
+✓ Has he built a RAG pipeline with reranking? → /projects/agentic-rag  [agentic-rag, skills-retrieval-rag, agentic-rag-2, profile]
+✓ Where does he work now? → /#experience  [contact, miso-chat-12, profile, job-grabbit]
+✓ How can I contact him? → mailto:  [contact, agent-observability-1, agent-observability-0, invoicechaser-5]
 ✓ Does he know LangGraph? → /#skills | /projects/invoicechaser  [skills-agents-orchestration, profile, invoicechaser, projects-overview]
 
 Vector sync (fake Pinecone)
-✓ first sync upserts every chunk (65/65)
+✓ first sync upserts every chunk (66/66)
 ✓ records carry the text to embed in `content`
 ✓ re-sync with no changes sends nothing (no embedding tokens spent)
 ✓ edit one chunk + remove one → 1 upserted, 1 deleted (got 1, 1)
 
 Chunk boundaries
-✓ chunk ids are unique (65)
+✓ chunk ids are unique (66)
 ✓ "miso" (the cat) and "miso-chat" (the project) are both indexed
 ✓ no chunk links to the removed Miso post
 ✓ every chunk has exactly one source
@@ -39,14 +40,14 @@ Content: widget markers
 ✓ known widget names and all current content pass the check
 
 Namespace per content version
-✓ same content → same corpus hash (232917e6)
+✓ same content → same corpus hash (d3ed1eaa)
 ✓ chunk order doesn't change the hash
 ✓ editing one chunk changes the hash
 ✓ production build → production-<hash>
 ✓ deploy preview → preview-<hash>
 ✓ no CONTEXT (next dev) → local
 ✓ PINECONE_NAMESPACE override still wins
-✓ half-written namespace: the next build upserts only the 55 missing chunks
+✓ half-written namespace: the next build upserts only the 56 missing chunks
 ✓ stamp writes syncedAt into the profile record and keeps its hash
 ✓ a stamped namespace still syncs as unchanged
 
@@ -90,14 +91,14 @@ Answer cache
 ✓ different questions stay different
 ✓ cache key is a hash with no question text (q/b35177ce75be…)
 ✓ grounded, cited, main-model live answer is cacheable
-✓ retrieval-only (demo) answers are not cached
-✓ ungrounded answers are not cached
-✓ answers without sources are not cached
-✓ 'not covered' answers are not cached
-✓ fallback-model answers are not cached
-✓ answers found while meaning search was down are not cached
-✓ an answer still showing raw citation markers is never cached
-✓ answers with no meaning-search matches (e.g. pruned namespace) are not cached
+✓ retrieval-only (demo) answers are not cached (demo)
+✓ ungrounded answers are not cached (ungrounded)
+✓ answers without sources are not cached (no-sources)
+✓ 'not covered' answers are not cached (not-covered)
+✓ grounded, cited fallback-model answers are cacheable
+✓ answers found while meaning search was down are not cached (meaning-search-degraded)
+✓ an answer still showing raw citation markers is never cached (raw-citations)
+✓ answers with no meaning-search matches (e.g. pruned namespace) are not cached (meaning-search-degraded)
 
 Meaning-search health
 ✓ healthy meaning search → ok, 1 hit
@@ -113,7 +114,7 @@ Meaning-search health
 ✓ a throwing cache read is treated as a miss
 ✓ a throwing cache write does not throw
 [answer-cache] read failed, answering live: Error: read timed out after 1500ms
-✓ a hanging cache read gives up and misses (1503ms)
+✓ a hanging cache read gives up and misses (1504ms)
 ✓ a hanging cache write gives up (4002ms)
 ✓ no Netlify Blobs environment (local, evals) → cache off
 
@@ -123,12 +124,25 @@ Chat route with an in-memory cache store
 ✓ the grounded answer is written to the cache after the response
 ✓ repeat (normalised) question: cache hit, no Groq call, not rate-limited
 ✓ follow-up questions neither read nor write the cache
-✓ an answer from the fallback model is shown but not cached
+✓ an answer from the fallback model is shown and cached, recorded as the fallback model's
 ✓ uncached questions still count against the rate limit
+✓ a fresh fallback entry is a cache hit and triggers no upgrade run (cooldown)
+✓ a due fallback hit is answered from the cache at once, before any upgrade run
+✓ the background upgrade replaces the fallback entry with a main-model answer
+✓ a main-model entry triggers no upgrade
+✓ an upgrade run that falls back again leaves the fallback entry in place
+✓ …and pushes the next upgrade attempt out by the cooldown
+✓ …and logs why the upgrade did not replace it
+✓ an entry inside its cooldown triggers no agent call
+✓ a fallback answer never overwrites a main-model entry
+✓ …and the skip is logged
+✓ a rejected answer logs the rule and the hash key, no question text
+✓ takeUpgrade refuses once the upgrade budget is used up
+✓ …and spending it leaves the visitor quota untouched
 
 Live semantic retrieval (Pinecone)
-✓ by meaning: How does he keep tabs on what an AI is doing behind the scenes? → /projects/agent-observability  [agent-observability-0 0.26, agent-observability-1 0.25, projects-overview 0.25, agent-observability 0.24, agent-observability-2 0.23, skills-agents-orchestration 0.22]
-✓ by meaning: Does he understand meaning-based retrieval? → /projects/agentic-rag  [skills-retrieval-rag 0.25, agentic-rag-0 0.22, post-how-miso-answers-2 0.21, agentic-rag-2 0.20, agentic-rag 0.16]
+✓ by meaning: How does he keep tabs on what an AI is doing behind the scenes? → /projects/agent-observability  [agent-observability-0 0.26, agent-observability-1 0.25, projects-overview 0.24, miso-chat-18 0.24, agent-observability 0.24, agent-observability-2 0.23]
+✓ by meaning: Does he understand meaning-based retrieval? → /projects/agentic-rag  [skills-retrieval-rag 0.25, miso-chat-1 0.22, agentic-rag-0 0.22, miso-chat-3 0.21, agentic-rag-2 0.20, miso-chat-6 0.19]
 ✓ monitoring and tracing AI agent runs → /projects/agent-observability  [agent-observability, agent-observability-1, projects-overview, skills-evals-observability]
 ✓ Pinecone project filter returns only that project [post-langchain-tool-gating-3, invoicechaser-4, invoicechaser-1, invoicechaser-2]
 ✓ off-topic question retrieves nothing []
@@ -137,20 +151,20 @@ Live model
 ✓ How does InvoiceChaser keep a human in the loop? → grounded in 1 sources
 ✓ What did he build at Grabbit with LLMs? → grounded in 1 sources
 ✓ Has he built a RAG pipeline with reranking? → grounded in 2 sources
-✓ show any full stack apps he's made → grounded in 2 sources
+✓ show any full stack apps he's made → grounded in 3 sources
 
 Live conversation
 ✓ follow-up "it" resolves to InvoiceChaser [/projects/invoicechaser]
-✓ off-topic gets an in-character redirect: "I’m here to chat about Chiranjeev’s projects, skills, and experience (or about me, his flu"
-✓ "why?" is explained, not refused: "I’m the friendly Ragdoll assistant for Chiranjeev’s portfolio, so I only have information "
-✓ persona question "Who are you?" answered without searching: "Miso here - the friendly Ragdoll cat who doubles as the assi"
-✓ persona question "Are you a real cat?" answered without searching: "Miso is a virtual Ragdoll cat created to be the friendly fac"
+✓ off-topic gets an in-character redirect: "I’m here to chat about Chiranjeev’s projects, experience, and how to get in touch - maybe "
+✓ "why?" is explained, not refused: "I’m the friendly ragdoll cat-assistant on Chiranjeev’s portfolio, so I only have informati"
+✓ persona question "Who are you?" answered without searching: "I’m Miso, Chiranjeev Thomas’s fluffy Ragdoll cat and the fri"
+✓ persona question "Are you a real cat?" answered without searching: "Miso is a virtual Ragdoll cat created as the friendly face o"
 ✓ "How does this chat find its answers?" searches the portfolio (1 searches)
 ✓ "How does Miso cache answers?" cites the case study [/projects/miso-chat]
-✓ "Pinecone down" answer describes the keyword fallback [/projects/miso-chat]: "If Pinecone (the vector-search service) is unavailable, Miso falls back to keywo"
+✓ "Pinecone down" answer describes the keyword fallback [/projects/miso-chat]: "If Pinecone is unavailable, Miso falls back to keyword-only search. It skips the"
 ✓ "What happens to Miso if Pinecone goes down?" is never scoped to another project and cites the case study [/projects/miso-chat]
-✓ "How fast is a cached answer?" uses only the case study's figures [60ms, 0.4s, 1.5s]
+✓ "How fast is a cached answer?" uses only the case study's figures [60ms, 0.4s]
 ✓ uncovered personal fact is declined, not invented: "I’m sorry, but the portfolio doesn’t mention Chiranjeev’s favourite pi"
-✓ knows about Miso: "Yes-Chiranjeev lives with Miso, his Ragdoll cat who also serves as the chat assistant on t"
+✓ knows about Miso: "Yes-Chiranjeev lives with Miso, his Ragdoll cat who also serves as the chat’s assistant."
 
 All passed
