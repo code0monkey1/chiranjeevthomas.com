@@ -46,7 +46,7 @@
 
 ## 8. Launch
 
-- [ ] 8.1 Set `draft: false`, deploy, and verify on production: the post renders with all widgets and diagrams, the sync log shows the post's chunks upserted, and asking Miso "How does Miso cache answers?" in the live chat cites the post
+- [x] 8.1 Set `draft: false`, deploy, and verify on production: the post renders with all widgets and diagrams, the sync log shows the post's chunks upserted, and asking Miso "How does Miso cache answers?" in the live chat cites the post — verified 2026-11-22 on www.chiranjeevthomas.com (post 200; production-472cb5e0 holds the post's chunks; the live answer cites /blog/how-miso-answers)
 
 ## Workflow follow-up
 

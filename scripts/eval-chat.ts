@@ -272,14 +272,14 @@ check(models[1] === FALLBACK_MODEL && rl.mode === "live" && rl.trace.some((s) =>
 // Which model answered decides whether the answer may be cached (fallback answers never are).
 check(rl.model === FALLBACK_MODEL, `result records the fallback model as the answerer (${rl.model})`);
 check(r.model === MODEL, `a run on the main model records it (${r.model})`);
-check(notCovered("I couldn’t find that in his portfolio.") && !notCovered("He built InvoiceChaser."), "notCovered spots 'not in the portfolio' answers only");
+check(notCovered("I couldn’t find that in his portfolio.") && notCovered("The portfolio doesn’t mention his favourite pizza.") && !notCovered("He built InvoiceChaser."), "notCovered spots 'not in the portfolio' answers only");
 // The system prompt separates persona questions (playful, no search) from questions about how the chat works (search + cite).
 let systemPrompt = "";
 await runAgent("hi", [], "test-key", (async (_u: unknown, init?: RequestInit) => {
   systemPrompt = JSON.parse(String(init?.body)).messages[0].content;
   return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content: "Meow!" } }] }), { status: 200 });
 }) as typeof fetch);
-check(/as a character[^\n]*without searching/.test(systemPrompt) && /how this chat works[^\n]*call search_portfolio/.test(systemPrompt), "prompt: persona questions skip search, questions about how the chat works must search and cite");
+check(/as a character only[^\n]*without searching/.test(systemPrompt) && /how this chat works[^\n]*call search_portfolio/.test(systemPrompt), "prompt: persona questions skip search, questions about how the chat works must search and cite");
 
 console.log("\nAnswer cache");
 check(
@@ -460,12 +460,19 @@ if (process.env.GROQ_API_KEY) {
   check(caching.grounded && caching.sources.some((x) => x.href === POST), `"How does Miso cache answers?" cites the write-up [${caching.sources.map((x) => x.href).join(", ")}]`);
   const down = await say("What happens to the chat if Pinecone goes down?", []);
   check(down.grounded && /keyword/i.test(down.answer), `"Pinecone down" answer describes the keyword fallback [${down.sources.map((x) => x.href).join(", ")}]: "${down.answer.slice(0, 80)}"`);
+  // Regression from production: "to Miso" + "Pinecone" made the model scope the search to the agentic-rag project.
+  const miso = await say("What happens to Miso if Pinecone goes down?", []);
+  const misoScoped = miso.trace.some((t) => t.kind === "tool" && /project:/.test(t.label));
+  check(!misoScoped && miso.sources.some((x) => x.href === POST), `"What happens to Miso if Pinecone goes down?" searches unscoped and cites the write-up [${miso.sources.map((x) => x.href).join(", ")}]`);
   const fast = await say("How fast is a cached answer?", []);
   // Every duration Miso states must be one the post states (lookup ~60/72 ms, 0.4 s, under 0.1 s, the 1.5 s
   // timeout, ~2 s live answers, up to ~5 s with a cold start, 6.5 s cold start, 30 s 504s, 15–100 ms misses).
   const numbers = (fast.answer.match(/\d+(\.\d+)?\s?-?\s?(ms|milliseconds?|s|seconds?)\b/gi) ?? []).map((n) => n.replace(/\s|-/g, "").replace(/milliseconds?/i, "ms").replace(/seconds?/i, "s"));
   const POST_FIGURES = new Set(["60ms", "72ms", "0.4s", "0.1s", "1.5s", "2s", "2.0s", "5s", "6.5s", "30s", "15ms", "100ms", "1.6s", "1.8s"]);
   check(fast.sources.some((x) => x.href === POST) && numbers.every((n) => POST_FIGURES.has(n)), `"How fast is a cached answer?" uses only the post's figures [${numbers.join(", ")}]`);
+  // An uncovered personal fact must be declined, never invented (one live run once claimed a "favourite pizza").
+  const pizza = await say("What's his favourite pizza?", []);
+  check(!pizza.grounded && pizza.sources.length === 0 && !/margherita|pepperoni|hawaiian|neapolitan|veggie|cheese pizza|marinara|diavola/i.test(pizza.answer), `uncovered personal fact is declined, not invented: "${pizza.answer.slice(0, 70)}"`);
   const cat = await say("does he have a cat?", []);
   check(/miso|ragdoll/i.test(cat.answer), `knows about Miso: "${cat.answer.slice(0, 90)}"`);
 }

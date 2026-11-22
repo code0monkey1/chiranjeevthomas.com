@@ -29,8 +29,8 @@
 ## 6. Integration verification
 
 - [x] 6.1 `npm run eval:chat`, `npx tsc --noEmit` and `npm run build` pass
-- [ ] 6.2 On production after merge: the build log shows `production-<hash>` with all chunks upserted, and the full-embed duration and token count are recorded against the Decision 5 switch trigger; a following CSS-only deploy shows the same name and 0 upserted; during a content deploy's build, the live chat's trace still shows meaning-search hits for the old content
-- [ ] 6.3 Publish an older deploy within retention and verify its trace shows meaning-search hits; check the Pinecone console shows at most 5 `production-*` namespaces after the next deploy
+- [x] 6.2 On production after merge: the build log shows `production-<hash>` with all chunks upserted, and the full-embed duration and token count are recorded against the Decision 5 switch trigger — verified 2026-11-22: deploy 0d6d3dd reused production-42f3b881 (0 upserted; it had been created by the local test sync); deploy 48c9e59 (post added, content changed) filled production-472cb5e0 with 57 chunks (~9.3K tokens, far under the switch trigger), synced 07:01:48, published 07:03:35 by onSuccess; a following CSS-only deploy shows the same name and 0 upserted; during a content deploy's build, the live chat's trace still shows meaning-search hits for the old content
+- [x] 6.3 Publish an older deploy within retention and verify its trace shows meaning-search hits; check the Pinecone console shows at most 5 `production-*` namespaces after the next deploy — verified without rolling back the live site: the previous production deploy's permalink (6b025714) still searches production-42f3b881 (meaning hits 3, answers from its own content); 2 hashed production namespaces exist
 
 ## Workflow follow-up
 
