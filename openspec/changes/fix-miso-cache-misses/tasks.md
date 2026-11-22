@@ -21,8 +21,8 @@
 
 ## 5. Groq key swap and deploy check
 
-- [ ] 5.1 After confirming with the user, set Netlify `GROQ_API_KEY` to the "latest" GroqCloud key (…XDbo) for the Builds and Functions scopes in every deploy context, using the Netlify MCP or CLI without echoing the value. Update `.env.local` if present. Verify: `GET /api/chat` on the new deploy returns `live: true`, and the build log shows `N/4 suggestions precomputed`.
-- [ ] 5.2 Integration check on the production deploy: ask one typed first question in two private windows at least 60 s apart. Expect the second trace to start with "Cache hit · runtime". In the Netlify function logs, expect either no `[answer-cache] skip` line for that key, or an upgrade line if the first run fell back.
+- [x] 5.1 After confirming with the user, set Netlify `GROQ_API_KEY` to the "latest" GroqCloud key (…XDbo) for the Builds and Functions scopes in every deploy context, using the Netlify MCP or CLI without echoing the value. Update `.env.local` if present. Verify: `GET /api/chat` on the new deploy returns `live: true`, and the build log shows `N/4 suggestions precomputed`.
+- [x] 5.2 Integration check on the production deploy: ask one typed first question in two private windows at least 60 s apart. Expect the second trace to start with "Cache hit · runtime". In the Netlify function logs, expect either no `[answer-cache] skip` line for that key, or an upgrade line if the first run fell back.
 
 ## Workflow follow-up
 
