@@ -261,6 +261,36 @@ html.dialog-open { overflow: hidden; }
 .pd-stage:not(:last-child)::after { content: "→"; position: absolute; right: -9px; top: 50%; translate: 0 -50%; font-size: 12px; color: var(--sand-2); }
 .pd-stats { display: flex; flex-wrap: wrap; gap: 6px; }
 .pd-stat { padding: 3px 9px; border-radius: 999px; background: var(--sand-soft); color: var(--sienna); font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+/* Miso: question → hybrid search lanes → fused ranking → cited answer. */
+.pd-miso { gap: 10px; }
+.pd-lanes { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: minmax(0, auto) minmax(28px, 1fr); align-items: center; gap: 6px; }
+.pd-lane { display: contents; }
+.pd-lane-name { font-family: var(--font-mono); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-lane-name small { color: var(--muted); font-size: inherit; }
+.pd-lane:last-child .pd-span-bar { background: var(--sand-2); }
+.pd-fuse { flex: 0 0 auto; padding: 4px 9px; border-radius: 999px; background: var(--sand-soft); color: var(--sienna); font-family: var(--font-mono); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.pd-answer { align-self: flex-end; max-width: 92%; padding: 8px 12px; border-radius: 14px 4px 14px 14px; background: var(--surface); border: 1px solid var(--line); font-size: 12.5px; line-height: 1.4; box-shadow: 0 4px 12px rgba(12,10,9,.05); }
+.pd-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pd-answer-short { display: none; }
+.pd-source { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+/* Miso's cover in a narrow card (phones, and two-column grids on tablets): drop the arrows and engine names
+   and tighten spacing so all three rows fit. Sized by the card, not the screen. */
+.project-media:has(.pd-miso) { container-type: inline-size; }
+@container (max-width: 440px) {
+  .pd.pd-miso { gap: 7px; padding-top: 42px; padding-bottom: 10px; }
+  .pd-miso .pd-answer-long { display: none; }
+  .pd-miso .pd-answer-short { display: inline; }
+  .pd-miso .pd-say { padding: 6px 10px; font-size: 12px; }
+  .pd-miso .pd-node { padding: 5px 7px; font-size: 10px; }
+  .pd-miso .pd-arrow { display: none; }
+  .pd-miso .pd-lanes { grid-template-columns: auto minmax(16px, 1fr); gap: 5px; }
+  .pd-miso .pd-lane-name { font-size: 9.5px; }
+  .pd-miso .pd-lane-name small { display: none; }
+  .pd-miso .pd-fuse { padding: 3px 7px; font-size: 10px; }
+  .pd-miso .pd-answer { max-width: 100%; padding: 6px 10px; font-size: 11.5px; }
+  .pd-miso .pd-chips { margin-top: 4px; gap: 4px; }
+  .pd-miso .pd-source, .pd-miso .pd-check { padding: 2px 7px; font-size: 10px; }
+}
 /* The wide feature card has room for larger diagram text. */
 .project-card.wide .pd { padding: 48px 40px 24px; gap: 14px; font-size: 14px; }
 .project-card.wide .pd-json { font-size: 12px; }

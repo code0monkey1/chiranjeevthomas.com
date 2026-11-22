@@ -65,7 +65,39 @@ function ReferralFlow() {
   );
 }
 
+function MisoChat() {
+  const lanes: Array<[string, string]> = [["meaning", "Pinecone"], ["keywords", "BM25"]];
+  return (
+    <div className="pd pd-miso" role="img" aria-label="Miso, the chat on this site: a question triggers a search that runs meaning and keyword search, merges the two rankings into the top 4 passages, and returns an answer that cites its source, here served from the cache in 60 milliseconds">
+      <div className="pd-say pd-step" style={{ animationDelay: "0s" }}>“How does Miso cache answers?”</div>
+      <div className="pd-row">
+        <span className="pd-node pd-step" style={{ animationDelay: ".5s" }}>search_portfolio</span>
+        <span className="pd-arrow pd-step" style={{ animationDelay: ".7s" }} />
+        <span className="pd-lanes">
+          {lanes.map(([kind, engine], i) => (
+            <span key={kind} className="pd-lane">
+              <span className="pd-lane-name pd-step" style={{ animationDelay: `${0.8 + i * 0.2}s` }}>{kind} <small>· {engine}</small></span>
+              <span className="pd-span-track"><span className="pd-span-bar pd-grow" style={{ left: 0, width: "100%", animationDelay: `${0.9 + i * 0.25}s` }} /></span>
+            </span>
+          ))}
+        </span>
+        <span className="pd-arrow pd-step" style={{ animationDelay: "1.6s" }} />
+        <span className="pd-fuse pd-step" style={{ animationDelay: "1.8s" }}>RRF top 4</span>
+      </div>
+      <div className="pd-answer pd-step" style={{ animationDelay: "2.4s" }}>
+        <span className="pd-answer-long">Bubbles ship pre-answered; repeats come from a per-deploy cache.</span>
+        <span className="pd-answer-short">Repeats come from a per-deploy cache.</span>
+        <span className="pd-chips">
+          <span className="pd-source">↗ Miso: caching</span>
+          <span className="pd-check pd-step" style={{ animationDelay: "2.9s" }}>cache hit · 60 ms</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 const DIAGRAMS: Record<string, () => React.ReactElement> = {
+  "miso-chat": MisoChat,
   "grabbit-llm-search": GrabbitSearch,
   "agent-observability": AgentTrace,
   devreferral: ReferralFlow,
