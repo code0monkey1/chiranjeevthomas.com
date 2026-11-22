@@ -33,6 +33,9 @@ async function main() {
     return;
   }
 
+  // Search the namespace this build just synced (its own content version), not the live one.
+  const { pinBuildNamespace } = await import("../lib/build-namespace");
+  console.log(`precompute:answers: searching ${pinBuildNamespace()}`);
   const { runAgent, MODEL } = await import("../lib/agent");
   const { isCacheable } = await import("../lib/answer-store");
   for (const [i, q] of SUGGESTIONS.entries()) {

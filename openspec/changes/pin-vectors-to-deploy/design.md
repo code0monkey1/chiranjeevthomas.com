@@ -121,7 +121,7 @@ embed only changed   today: cheap, live reads a      ideal: safe and cheap
 
 ## Risks / Trade-offs
 
-- [Pinecone's metadata-only `update` re-embeds the record, or isn't supported on integrated-embedding indexes.] → Task 1.1 checks this first. Fallback: skip pruning and log a warning once more than 80 namespaces exist. At about 3 content deploys a month that is years of headroom, and the cleanup becomes manual.
+- [Pinecone's metadata-only `update` re-embeds the record, or isn't supported on integrated-embedding indexes.] → **Checked 2026-11-21 (task 1.1), not a problem:** on a scratch namespace of this index, `update({ id, metadata: { syncedAt } })` merged the new field and left the 1,024-dim vector bit-for-bit identical, with `content` and `hash` kept. `listNamespaces()` returns each name with its record count. The fallback below is no longer needed. Original note: task 1.1 checks this first. Fallback: skip pruning and log a warning once more than 80 namespaces exist. At about 3 content deploys a month that is years of headroom, and the cleanup becomes manual.
 - [A content deploy now embeds the full corpus (about 6K tokens) instead of only the changed chunks.] → Accepted at this scale, with a measured trigger and a named path to switch to (Decision 5).
 - [Two builds running at once: one prunes while the other is mid-sync.] → An unpublished namespace synced less than an hour ago is never pruned, and Netlify runs one build at a time per site on this plan. The remaining window is only the seconds before the sync writes `syncedAt`.
 - [A rollback past the 5 most recent versions degrades to keyword search.] → Accepted (degraded mode). The guard keeps those answers out of the caches, and the next deploy restores full search.

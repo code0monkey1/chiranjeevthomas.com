@@ -9,9 +9,10 @@
  */
 import { loadEnvConfig } from "@next/env";
 loadEnvConfig(process.cwd());
-import { buildIndex, fuse, keywordSearch, search } from "../lib/search-index";
+import { buildIndex, fuse, keywordSearch, search, searchWithTrace, useDenseSearch } from "../lib/search-index";
 import { FALLBACK_MODEL, MAX_SEARCHES, MODEL, finalize, notCovered, runAgent } from "../lib/agent";
-import { denseSearch, syncRecords, vectorSearchEnabled, type VectorNamespace } from "../lib/vector-store";
+import { STAMP_RECORD, corpusHash, denseSearch, pruneNamespaces, stamp, syncRecords, vectorSearchEnabled, type PrunableIndex, type VectorNamespace } from "../lib/vector-store";
+import { resolveNamespace } from "../lib/namespace";
 import { cachedTrace, normalizeQuestion } from "../lib/answer-cache";
 import { answerStore, isCacheable, questionKey, setAnswerStore } from "../lib/answer-store";
 
@@ -32,13 +33,15 @@ const SEMANTIC_CASES: Array<[string, string[]]> = [
 /** In-memory stand-in for a Pinecone namespace that records what was sent. */
 function fakeNamespace() {
   const store = new Map<string, Record<string, string>>();
-  const log = { upserted: 0, deleted: 0 };
+  const log = { upserted: 0, deleted: 0, updated: 0 };
   const ns: VectorNamespace = {
     async listPaginated() { return { vectors: Array.from(store.keys()).map((id) => ({ id })) }; },
     async fetch({ ids }) { return { records: Object.fromEntries(ids.filter((id) => store.has(id)).map((id) => [id, { metadata: store.get(id) }])) }; },
     async upsertRecords({ records }) { records.forEach((r) => store.set(r.id, r)); log.upserted += records.length; },
     async deleteMany({ ids }) { ids.forEach((id) => store.delete(id)); log.deleted += ids.length; },
     async searchRecords() { return { result: { hits: [] } }; },
+    // Like Pinecone: merges metadata into an existing record and leaves everything else as it was.
+    async update({ id, metadata }) { const r = store.get(id); if (r) store.set(id, { ...r, ...metadata }); log.updated++; },
   };
   return { ns, store, log };
 }
@@ -76,6 +79,82 @@ check(docs.filter((d) => d.project).every((d) => projectSlugs.has(d.project)), "
 const scoped = keywordSearch("tracing evals tool gating approval", 10, "invoicechaser");
 check(scoped.length > 0 && scoped.every((d) => d.project === "invoicechaser"), `scoped search stays inside one project [${scoped.map((d) => d.id).join(", ")}]`);
 check(scoped.some((d) => d.source.startsWith("post:")), "scoped search includes posts written about that project");
+
+console.log("\nNamespace per content version");
+{
+  const h = corpusHash(docs);
+  check(/^[0-9a-f]{8}$/.test(h) && corpusHash(docs) === h, `same content → same corpus hash (${h})`);
+  check(corpusHash([...docs].reverse()) === h, "chunk order doesn't change the hash");
+  const edited = docs.map((d, i) => (i === 3 ? { ...d, text: d.text + " (edited)" } : d));
+  check(corpusHash(edited) !== h, "editing one chunk changes the hash");
+  const corpus = () => h;
+  check(resolveNamespace({ CONTEXT: "production" } as never, corpus) === `production-${h}`, "production build → production-<hash>");
+  check(resolveNamespace({ CONTEXT: "deploy-preview" } as never, corpus) === `preview-${h}`, "deploy preview → preview-<hash>");
+  check(resolveNamespace({} as never, corpus) === "local", "no CONTEXT (next dev) → local");
+  check(resolveNamespace({ CONTEXT: "production", PINECONE_NAMESPACE: "pinned" } as never, corpus) === "pinned", "PINECONE_NAMESPACE override still wins");
+  // Self-healing: a namespace left half-written by a killed build is completed, not duplicated.
+  const half = fakeNamespace();
+  await syncRecords(docs.slice(0, 10), half.ns);
+  const healed = await syncRecords(docs, half.ns);
+  check(healed.upserted === docs.length - 10 && half.store.size === docs.length, `half-written namespace: the next build upserts only the ${docs.length - 10} missing chunks`);
+  const hashBefore = half.store.get(STAMP_RECORD)?.hash;
+  await stamp(half.ns, "syncedAt", new Date("2026-11-22T10:00:00Z"));
+  const stamped = half.store.get(STAMP_RECORD)!;
+  check(stamped.syncedAt === "2026-11-22T10:00:00.000Z" && stamped.hash === hashBefore && !!hashBefore, "stamp writes syncedAt into the profile record and keeps its hash");
+  check((await syncRecords(docs, half.ns)).upserted === 0, "a stamped namespace still syncs as unchanged");
+}
+
+console.log("\nPruning after publish");
+{
+  const now = new Date("2026-11-22T12:00:00Z");
+  const hoursAgo = (h: number) => new Date(now.getTime() - h * 3600_000).toISOString();
+  /** A fake index: name → stamps on its profile record. `failDelete` makes deleting that name throw. */
+  const fakeIndex = (spaces: Record<string, { publishedAt?: string; syncedAt?: string }>, failDelete?: string) => {
+    const nss = new Map(Object.entries(spaces).map(([name, st]) => {
+      const f = fakeNamespace();
+      f.store.set(STAMP_RECORD, { id: STAMP_RECORD, hash: "h", ...(st as Record<string, string>) });
+      return [name, f];
+    }));
+    const index: PrunableIndex = {
+      async listNamespaces(o) { return { namespaces: [...nss.keys()].filter((n) => !o?.prefix || n.startsWith(o.prefix)).map((name) => ({ name })) }; },
+      async deleteNamespace(name) { if (name === failDelete) throw new Error("boom"); nss.delete(name); },
+      namespace: (name) => nss.get(name)!.ns,
+    };
+    return { index, nss };
+  };
+  const quiet = () => {};
+
+  const seven = fakeIndex(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((i) => [`production-p${i}`, { publishedAt: hoursAgo(100 - i), syncedAt: hoursAgo(100 - i) }])));
+  const r7 = await pruneNamespaces(seven.index, "production-p7", "production-", now, quiet);
+  check(r7.kept.length === 5 && r7.kept.includes("production-p7") && r7.deleted.sort().join() === "production-p1,production-p2", `7 published versions → live + 4 newest kept, 2 oldest deleted [deleted ${r7.deleted.join(", ")}]`);
+  check(seven.nss.get("production-p7")!.store.get(STAMP_RECORD)!.publishedAt === now.toISOString(), "the live namespace is stamped as published");
+
+  const orphan = fakeIndex({
+    ...Object.fromEntries([1, 2, 3, 4, 5].map((i) => [`production-d${i}`, { publishedAt: hoursAgo(50 - i), syncedAt: hoursAgo(50 - i) }])),
+    "production-d6": { syncedAt: hoursAgo(2) }, // synced, then the build failed: never published
+    "production-d7": { syncedAt: hoursAgo(0.2) },
+  });
+  const ro = await pruneNamespaces(orphan.index, "production-d7", "production-", now, quiet);
+  check(ro.deleted.includes("production-d6") && ["production-d2", "production-d3", "production-d4", "production-d5"].every((n) => ro.kept.includes(n)), `a failed build's leftover is deleted before any published version [deleted ${ro.deleted.join(", ")}]`);
+
+  const mid = fakeIndex({ "production-a": { publishedAt: hoursAgo(5) }, "production-building": { syncedAt: hoursAgo(5 / 60) }, "production-live": {} });
+  const rm = await pruneNamespaces(mid.index, "production-live", "production-", now, quiet);
+  check(rm.kept.includes("production-building") && !rm.deleted.length, "a namespace synced 5 minutes ago and not yet published is kept (a build may be using it)");
+
+  const reverted = fakeIndex(Object.fromEntries([1, 2, 3, 4, 5, 6].map((i) => [`production-r${i}`, { publishedAt: hoursAgo(100 - i) }])));
+  const rr = await pruneNamespaces(reverted.index, "production-r1", "production-", now, quiet);
+  check(rr.kept.includes("production-r1") && !rr.deleted.includes("production-r1"), "content reverted to an old version: its (old-named) live namespace is kept");
+
+  const legacy = fakeIndex({ production: { syncedAt: hoursAgo(900) }, local: {}, "preview-x": { publishedAt: hoursAgo(1) }, "production-new": {} });
+  await pruneNamespaces(legacy.index, "production-new", "production-", now, quiet);
+  check(legacy.nss.has("production") && legacy.nss.has("local") && legacy.nss.has("preview-x"), "the legacy 'production', 'local' and other environments are never touched");
+
+  const failing = fakeIndex({ "production-old1": { publishedAt: hoursAgo(90) }, ...Object.fromEntries([1, 2, 3, 4].map((i) => [`production-k${i}`, { publishedAt: hoursAgo(10 - i) }])), "production-old2": { publishedAt: hoursAgo(95) }, "production-live": {} }, "production-old1");
+  let threw = false;
+  let rf: Awaited<ReturnType<typeof pruneNamespaces>> | undefined;
+  try { rf = await pruneNamespaces(failing.index, "production-live", "production-", now, quiet); } catch { threw = true; }
+  check(!threw && !!rf && rf.deleted.includes("production-old2"), "a failed delete is logged, not thrown, and the rest are still pruned");
+}
 
 console.log("\nHybrid fusion (fake dense results)");
 const obs = docs.find((d) => d.href === "/projects/agent-observability")!;
@@ -185,13 +264,32 @@ check(
 check(normalizeQuestion("Has he used RAG?") !== normalizeQuestion("Has he used Ruby?"), "different questions stay different");
 const key = questionKey("How does InvoiceChaser keep a human in the loop?");
 check(/^q\/[0-9a-f]{64}$/.test(key) && !/invoice/i.test(key), `cache key is a hash with no question text (${key.slice(0, 14)}…)`);
-const good = { ...r, grounded: true, sources: [{ title: "InvoiceChaser", href: "/projects/invoicechaser" }], model: MODEL };
+const good = { ...r, grounded: true, sources: [{ title: "InvoiceChaser", href: "/projects/invoicechaser" }], model: MODEL, search: { meaningOk: true, meaningHits: 4 } };
 check(isCacheable(good), "grounded, cited, main-model live answer is cacheable");
 check(!isCacheable({ ...good, mode: "demo" }), "retrieval-only (demo) answers are not cached");
 check(!isCacheable({ ...good, grounded: false }), "ungrounded answers are not cached");
 check(!isCacheable({ ...good, sources: [] }), "answers without sources are not cached");
 check(!isCacheable({ ...good, answer: "I couldn’t find that in his portfolio." }), "'not covered' answers are not cached");
 check(!isCacheable({ ...good, model: FALLBACK_MODEL }), "fallback-model answers are not cached");
+check(!isCacheable({ ...good, search: { meaningOk: false, meaningHits: 0 } }), "answers found while meaning search was down are not cached");
+check(!isCacheable({ ...good, search: { meaningOk: true, meaningHits: 0 } }), "answers with no meaning-search matches (e.g. pruned namespace) are not cached");
+
+console.log("\nMeaning-search health");
+{
+  const ic = docs.find((d) => d.id === "invoicechaser")!;
+  const healthy = async () => [{ id: ic.id, score: 0.4, title: ic.title, href: ic.href, text: ic.text, source: ic.source, project: ic.project }];
+  const empty = async () => [];
+  const down = async (): Promise<never> => { throw new Error("pinecone down"); };
+  check((await searchWithTrace("InvoiceChaser approval", 4, healthy)).dense.ok === true && (await searchWithTrace("InvoiceChaser approval", 4, healthy)).dense.hits === 1, "healthy meaning search → ok, 1 hit");
+  const e = (await searchWithTrace("InvoiceChaser approval", 4, empty)).dense;
+  check(e.ok && e.hits === 0, "empty namespace → ok but 0 hits");
+  check((await searchWithTrace("InvoiceChaser approval", 4, down)).dense.ok === false, "Pinecone error → not ok (keyword fallback)");
+  const runWith = async (d: typeof healthy | typeof down) => { useDenseSearch(d); call = 0; const res = await runAgent("How does InvoiceChaser keep a human in the loop?", [], "test-key", mock); useDenseSearch(); return res.search; };
+  const okRun = await runWith(healthy);
+  check(okRun.meaningOk && okRun.meaningHits === 1, `agent result carries meaning-search health (${JSON.stringify(okRun)})`);
+  const downRun = await runWith(down);
+  check(!downRun.meaningOk && downRun.meaningHits === 0, "an agent run whose search fell back to keywords is marked not ok");
+}
 const hitTrace = cachedTrace({ result: good, model: MODEL, createdAt: "2026-11-22T10:00:00.000Z" }, "runtime", 12);
 check(
   hitTrace[0].label === "Cache hit · runtime · 12ms" && hitTrace[1].label === "Original run" && hitTrace.slice(2).every((s) => s.kind === "step") && hitTrace.length === good.trace.length + 2,
@@ -234,6 +332,8 @@ console.log("\nChat route with an in-memory cache store");
     async get(k) { gets++; return (mem.get(k) as never) ?? null; },
     async set(k, v) { await new Promise((res) => setTimeout(res, 300)); mem.set(k, v); sets++; writeDoneAt = performance.now(); },
   });
+  const ic = docs.find((d) => d.id === "invoicechaser")!;
+  useDenseSearch(async () => [{ id: ic.id, score: 0.4, title: ic.title, href: ic.href, text: ic.text, source: ic.source, project: ic.project }]);
   const { POST } = await import("../app/api/chat/route");
   const ask = async (ip: string, question: string, history: unknown[] = []) => {
     const res = await POST(new Request("http://local/api/chat", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": ip }, body: JSON.stringify({ question, history }) }));
@@ -267,6 +367,7 @@ console.log("\nChat route with an in-memory cache store");
   check(limitedNow.status === 429, "uncached questions still count against the rate limit");
 
   setAnswerStore(undefined);
+  useDenseSearch();
   globalThis.fetch = realFetch;
   if (realKey === undefined) delete process.env.GROQ_API_KEY; else process.env.GROQ_API_KEY = realKey;
 }

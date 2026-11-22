@@ -12,10 +12,13 @@ import { normalizeQuestion, type CachedAnswer } from "./answer-cache";
 
 /**
  * Only trustworthy answers are cached: written by the live agent on the main model, grounded, with at
- * least one source, and not a "the portfolio doesn't cover that" reply.
+ * least one source, not a "the portfolio doesn't cover that" reply, and found with a working meaning
+ * search. That last rule keeps keyword-only answers (Pinecone down, or a rolled-back deploy whose
+ * namespace was pruned) from being frozen in a cache for the deploy's lifetime.
  */
 export function isCacheable(r: AgentResult): boolean {
-  return r.mode === "live" && r.grounded && r.sources.length > 0 && r.model === MODEL && !notCovered(r.answer);
+  return r.mode === "live" && r.grounded && r.sources.length > 0 && r.model === MODEL && !notCovered(r.answer)
+    && r.search.meaningOk && r.search.meaningHits > 0;
 }
 
 /** A hash of the normalised question. The visitor's text itself is never stored. */

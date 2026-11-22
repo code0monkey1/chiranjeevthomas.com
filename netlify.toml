@@ -10,6 +10,11 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# After a deploy is live, delete Pinecone namespaces of old content versions (keeps the live one and the
+# 4 most recently published). Runs in onSuccess, so a failed build never prunes. See plugins/prune-vectors.
+[[plugins]]
+  package = "./plugins/prune-vectors"
+
 # Send the bare domain and the Netlify subdomain to the canonical www host.
 [[redirects]]
   from = "https://chiranjeevthomas.com/*"

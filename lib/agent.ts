@@ -1,6 +1,6 @@
-import { buildIndex, searchWithTrace, type Chunk, type SearchStep } from "./search-index";
+import { buildIndex, searchWithTrace, type Chunk, type DenseHealth, type SearchStep } from "./search-index";
 import { getProjects } from "./content";
-import { denseSearch, warmUp } from "./vector-store";
+import { warmUp } from "./vector-store";
 
 export type Step = { kind: "goal" | "think" | "tool" | "step" | "done" | "err"; label: string; detail: string };
 
@@ -9,7 +9,15 @@ const subSteps = (steps: SearchStep[]): Step[] => steps.map((s) => ({ kind: "ste
  * `model` is the model that wrote the answer: MODEL only if every LLM round of the run used it, FALLBACK_MODEL
  * if any round fell back on a rate limit, null when no LLM ran (retrieval-only answers).
  */
-export type AgentResult = { answer: string; sources: Array<{ title: string; href: string }>; trace: Step[]; grounded: boolean; mode: "live" | "demo"; model: string | null };
+export type AgentResult = {
+  answer: string; sources: Array<{ title: string; href: string }>; trace: Step[]; grounded: boolean; mode: "live" | "demo"; model: string | null;
+  /** Meaning-search health over the run: ok only if at least one search ran and none was skipped or failed; hits = dense matches in total. */
+  search: { meaningOk: boolean; meaningHits: number };
+};
+/** Adds up meaning-search health over every search of one run. */
+function searchHealth(all: DenseHealth[]): AgentResult["search"] {
+  return { meaningOk: all.length > 0 && all.every((d) => d.ok), meaningHits: all.reduce((n, d) => n + d.hits, 0) };
+}
 export type Turn = { role: "user" | "assistant"; content: string };
 /** Live updates while the agent works: each trace step as it happens, and answer text as Groq streams it. */
 export type AgentEvents = { step?: (s: Step) => void; token?: (text: string) => void; reset?: () => void };
@@ -182,7 +190,8 @@ function dedupeSources(chunks: Chunk[]) {
 
 /** Retrieval-only answer, used when no model key is configured or the model is unavailable. */
 export async function retrievalAnswer(question: string, why: Step = { kind: "think", label: "No LLM configured", detail: "searching with the question as typed" }): Promise<AgentResult> {
-  const { chunks: hits, steps } = await searchWithTrace(question, 3);
+  const { chunks: hits, steps, dense } = await searchWithTrace(question, 3);
+  const search = searchHealth([dense]);
   const trace: Step[] = [
     why,
     { kind: "tool", label: `search_portfolio("${question.slice(0, 48)}")`, detail: hits.length ? `${hits.length} chunks returned` : "no matches" },
@@ -190,7 +199,7 @@ export async function retrievalAnswer(question: string, why: Step = { kind: "thi
   ];
   if (!hits.length) {
     trace.push({ kind: "done", label: "Nothing relevant found", detail: "suggested email instead" });
-    return { answer: "I couldn’t find that in Chiranjeev’s portfolio. You can email him at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "demo", model: null };
+    return { answer: "I couldn’t find that in Chiranjeev’s portfolio. You can email him at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "demo", model: null, search };
   }
   // No model: quote the best passages, trimmed to whole sentences, with where they came from.
   const firstSentences = (t: string, max = 260) => {
@@ -202,7 +211,7 @@ export async function retrievalAnswer(question: string, why: Step = { kind: "thi
   };
   const answer = "Here’s what I found in his portfolio:\n\n" + hits.slice(0, 2).map((h) => { const name = h.title.split(":")[0]; const body = h.text.startsWith(h.title) ? h.text.slice(h.title.length).replace(/^\s*\([^)]*\)\.?\s*/, "") : h.text; return `${name.split(" — ")[0]} — ${firstSentences(body)}`; }).join("\n\n");
   trace.push({ kind: "done", label: `Answer grounded in ${hits.length} sources`, detail: hits.map((h) => h.title).join(", ") });
-  return { answer, sources: dedupeSources(hits), trace, grounded: true, mode: "demo", model: null };
+  return { answer, sources: dedupeSources(hits), trace, grounded: true, mode: "demo", model: null, search };
 }
 
 export async function runAgent(question: string, history: Turn[], apiKey: string, fetchImpl: typeof fetch = fetch, events: AgentEvents = {}): Promise<AgentResult> {
@@ -217,6 +226,7 @@ export async function runAgent(question: string, history: Turn[], apiKey: string
 
   let searchesLeft = MAX_SEARCHES;
   let answeredBy = MODEL;
+  const health: DenseHealth[] = [];
   for (let round = 0; round <= MAX_SEARCHES; round++) {
     const t0 = performance.now();
     const canSearch = searchesLeft > 0;
@@ -247,10 +257,12 @@ export async function runAgent(question: string, history: Turn[], apiKey: string
           project = getProjects().some((p) => p.slug === args.project) ? args.project : undefined;
         } catch { query = ""; }
         const s0 = performance.now();
-        let { chunks: hits, steps } = await searchWithTrace(query || question, 4, denseSearch, project);
+        let { chunks: hits, steps, dense } = await searchWithTrace(query || question, 4, undefined, project);
+        health.push(dense);
         if (project && !hits.length) {
           const wide = await searchWithTrace(query || question);
           hits = wide.chunks;
+          health.push(wide.dense);
           steps = [...steps, { label: "Widened to all content", detail: `nothing in ${project}` }, ...wide.steps];
         }
         return { call, query, project, hits, steps, took: ms(s0) };
@@ -266,13 +278,13 @@ export async function runAgent(question: string, history: Turn[], apiKey: string
     const uncovered = notCovered(answer);
     add({ kind: "done", label: `Answer grounded in ${sources.length} source${sources.length === 1 ? "" : "s"} · written in ${ms(t0)}`, detail: sources.map((s) => s.title).join(", ") || "—" });
     if (!sources.length && retrieved.size === 0) {
-      return { answer: answer || "I’m not sure about that one — please email Chiranjeev at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "live", model: answeredBy };
+      return { answer: answer || "I’m not sure about that one — please email Chiranjeev at chiranjeevwork@gmail.com.", sources: [], trace, grounded: false, mode: "live", model: answeredBy, search: searchHealth(health) };
     }
     // Link what the answer cited. A confident answer that forgot its citations (the smaller fallback model
     // often does) still shows the top results; an answer saying "not covered" shows none, because the search
     // can match the right word with the wrong meaning ("resume" a paused agent run).
     const shown = sources.length ? sources : uncovered ? [] : Array.from(retrieved.values()).slice(0, 2);
-    return { answer, sources: dedupeSources(shown), trace, grounded: shown.length > 0 && !uncovered, mode: "live", model: answeredBy };
+    return { answer, sources: dedupeSources(shown), trace, grounded: shown.length > 0 && !uncovered, mode: "live", model: answeredBy, search: searchHealth(health) };
   }
   throw new Error("agent did not finish");
 }

@@ -13,7 +13,7 @@ export const EMBED_MODEL = "llama-text-embed-v2";
 
 type Doc = { id: string; title: string; href: string; text: string; source: string; project?: string };
 export type DenseHit = { id: string; score: number; title: string; href: string; text: string; source: string; project?: string };
-type Fields = { content?: string; title?: string; href?: string; hash?: string; source?: string; project?: string };
+type Fields = { content?: string; title?: string; href?: string; hash?: string; source?: string; project?: string; syncedAt?: string; publishedAt?: string };
 
 /** The subset of Pinecone's namespace API used here (lets the evals pass in a fake). */
 export interface VectorNamespace {
@@ -22,6 +22,18 @@ export interface VectorNamespace {
   upsertRecords(o: { records: Array<Record<string, string>> }): Promise<void>;
   deleteMany(o: { ids: string[] }): Promise<void>;
   searchRecords(o: { query: { topK: number; inputs: { text: string }; filter?: object }; fields: string[] }): Promise<{ result: { hits: Array<{ _id: string; _score: number; fields: object }> } }>;
+  update(o: { id: string; metadata: Record<string, string> }): Promise<void>;
+}
+
+/** The record every namespace has; it carries the namespace's syncedAt / publishedAt stamps. */
+export const STAMP_RECORD = "profile";
+
+/**
+ * Writes a timestamp into the namespace's profile record metadata. A metadata-only update: Pinecone keeps
+ * the vector as it is (verified: the vector is bit-for-bit unchanged), so nothing is re-embedded.
+ */
+export async function stamp(ns: VectorNamespace, field: "syncedAt" | "publishedAt", at = new Date()) {
+  await ns.update({ id: STAMP_RECORD, metadata: { [field]: at.toISOString() } });
 }
 
 export const vectorSearchEnabled = () => !!process.env.PINECONE_API_KEY;
@@ -49,6 +61,12 @@ export async function ensureIndex() {
 
 const docText = (d: Doc) => `${d.title}. ${d.text}`;
 const hashOf = (d: Doc) => createHash("sha1").update(`${EMBED_MODEL}\n${d.href}\n${d.source}\n${d.project ?? ""}\n${docText(d)}`).digest("hex");
+
+/**
+ * One short hash of everything that gets embedded (each chunk's hashOf, which includes EMBED_MODEL).
+ * Sorted first, so file read order can't change it. Names the build's Pinecone namespace.
+ */
+export const corpusHash = (docs: Doc[]) => createHash("sha256").update(docs.map(hashOf).sort().join("\n")).digest("hex").slice(0, 8);
 const batches = <T>(xs: T[], n: number) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
 
 /**
@@ -80,7 +98,7 @@ export async function syncRecords(docs: Doc[], ns: VectorNamespace = getNamespac
   const removed = existing.filter((id) => !keep.has(id));
   for (const ids of batches(removed, 1000)) await ns.deleteMany({ ids });
 
-  return { upserted: changed.length, deleted: removed.length, unchanged: docs.length - changed.length };
+  return { upserted: changed.length, deleted: removed.length, unchanged: docs.length - changed.length, changedIds: changed.map((d) => d.id) };
 }
 
 let warmedAt = 0;
@@ -131,3 +149,65 @@ export async function denseSearch(query: string, k: number, project?: string, ns
     return { id: h._id, score: h._score, title, href: f.href ?? "/", text, source: f.source ?? "", project: f.project };
   });
 }
+
+/** The subset of Pinecone's index API that pruning needs (lets the evals pass in a fake). */
+export interface PrunableIndex {
+  listNamespaces(o?: { prefix?: string; paginationToken?: string }): Promise<{ namespaces?: Array<{ name?: string }>; pagination?: { next?: string } }>;
+  deleteNamespace(name: string): Promise<void>;
+  namespace(name: string): VectorNamespace;
+}
+
+/** Published namespaces kept besides the live one: enough to roll back four content versions with full search. */
+export const KEEP_PUBLISHED = 4;
+/** An unpublished namespace synced this recently may belong to a build still in progress, so it is kept. */
+export const IN_BUILD_MS = 60 * 60 * 1000;
+
+/**
+ * Runs after a deploy is live (the prune-vectors build plugin, onSuccess). Stamps the live namespace as
+ * published, then deletes namespaces in the same environment except: the live one, any unpublished one
+ * synced within the last hour (a build may be using it), and the KEEP_PUBLISHED most recently published.
+ * Retention ranks by publishedAt, not syncedAt, so a failed build's leftover never outlives a namespace
+ * that real visitors were served. Errors are logged, never thrown: pruning must not affect a deploy.
+ */
+export async function pruneNamespaces(index: PrunableIndex, live: string, prefix: string, now = new Date(), log: (msg: string) => void = console.log) {
+  const kept: string[] = [], deleted: string[] = [];
+  try {
+    await stamp(index.namespace(live), "publishedAt", now);
+  } catch (err) {
+    log(`prune: could not stamp ${live} as published (${(err as Error).message}); not pruning this time`);
+    return { kept, deleted };
+  }
+  const names: string[] = [];
+  let token: string | undefined;
+  do {
+    const page = await index.listNamespaces({ prefix, paginationToken: token });
+    page.namespaces?.forEach((n) => n.name?.startsWith(prefix) && names.push(n.name));
+    token = page.pagination?.next;
+  } while (token);
+
+  const others = await Promise.all(names.filter((n) => n !== live).map(async (name) => {
+    let meta: Fields | undefined;
+    try { meta = (await index.namespace(name).fetch({ ids: [STAMP_RECORD] })).records[STAMP_RECORD]?.metadata; } catch { /* unreadable: treat as unstamped */ }
+    const published = meta?.publishedAt ? Date.parse(meta.publishedAt) : 0;
+    const synced = meta?.syncedAt ? Date.parse(meta.syncedAt) : 0;
+    return { name, published, inBuild: !published && synced > 0 && now.getTime() - synced < IN_BUILD_MS };
+  }));
+  const recent = new Set(others.filter((o) => o.published).sort((a, b) => b.published - a.published).slice(0, KEEP_PUBLISHED).map((o) => o.name));
+  kept.push(live);
+  for (const o of others) {
+    if (o.inBuild || recent.has(o.name)) { kept.push(o.name); continue; }
+    try { await index.deleteNamespace(o.name); deleted.push(o.name); } catch (err) { log(`prune: could not delete ${o.name} (${(err as Error).message})`); }
+  }
+  log(`prune: kept ${kept.join(", ")}${deleted.length ? `; deleted ${deleted.join(", ")}` : "; nothing to delete"}`);
+  return { kept, deleted };
+}
+
+/** The real index, for pruneNamespaces. */
+export const prunableIndex = (): PrunableIndex => {
+  const idx = pinecone().index(INDEX_NAME);
+  return {
+    listNamespaces: (o) => idx.listNamespaces(o) as never,
+    deleteNamespace: (name) => idx.deleteNamespace(name),
+    namespace: (name) => getNamespace(name),
+  };
+};

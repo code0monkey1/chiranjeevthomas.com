@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { resolveNamespace } from "./lib/namespace";
+import { buildNamespace } from "./lib/build-namespace";
 
 /** Old Google Sites paths → new pages, so existing links and search results keep working. */
 const OLD_PATHS = ["/home", "/design", "/product", "/pricing", "/marketing", "/who-am-i", "/engineering/:path*", "/startups/:path*"];
@@ -9,8 +9,8 @@ const config: NextConfig = {
   poweredByHeader: false,
   // The chat API reads content/ at runtime to build its search index.
   outputFileTracingIncludes: { "/api/chat": ["./content/**/*"] },
-  // Which Pinecone namespace the chat searches, fixed at build time (see lib/namespace.ts).
-  env: { PINECONE_NAMESPACE: resolveNamespace() },
+  // Which Pinecone namespace the chat searches, fixed at build time: one per version of the content (see lib/namespace.ts).
+  env: { PINECONE_NAMESPACE: buildNamespace() },
   images: { formats: ["image/avif", "image/webp"] },
   async redirects() {
     return OLD_PATHS.map((source) => ({ source, destination: "/", permanent: true }));
