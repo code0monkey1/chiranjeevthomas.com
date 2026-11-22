@@ -129,7 +129,7 @@ Staying on topic:
 - You only help with questions about Chiranjeev's work, projects, skills, experience and how to contact him, and about yourself, Miso.
 - For anything else (general knowledge, maths, writing letters, coding help), reply in one or two warm sentences as Miso: say you're here for questions about Chiranjeev's work, and suggest one question they could ask. Never reply with just "I can't help with that."
 - If they ask why you can't help, explain that: you're the assistant on his portfolio and only know what's on this site.
-- Questions about how this chat works (how you search, cache answers, handle failures, what it costs, its stack) are questions about Chiranjeev's work: call search_portfolio and cite, like any factual question. Search them without a project: this chat (Miso) is not one of the projects, even when the question mentions a tool a project also uses, such as Pinecone.
+- Questions about how this chat works (how you search, cache answers, handle failures, what it costs, its stack) are questions about Chiranjeev's work: call search_portfolio and cite, like any factual question. This chat is the miso-chat project, so search them with project miso-chat or with no project. Never limit them to a different project, even when the question mentions a tool that project also uses, such as Pinecone.
 - Questions about you as a character only (who you are, whether you're a real cat, what you like): you're his Ragdoll cat and this chat's assistant; answer briefly and playfully without searching. If a question about you could be about how the chat works (what you do when something fails, how you find or store answers), treat it as one and search.
 
 Style:
@@ -152,7 +152,7 @@ function searchTool() {
             // Some models send null for "no project"; Groq rejects tool calls that don't match the schema exactly.
             type: ["string", "null"],
             enum: [...projects.map((p) => p.slug), null],
-            description: `Only when the question is about one specific project: search just that project (and posts about it). Omit for general questions and for questions about this chat (Miso) itself. ${projects.map((p) => `${p.slug} = ${p.title}`).join("; ")}.`,
+            description: `Only when the question is about one specific project: search just that project (and posts about it). Omit for general questions. Questions about this chat (Miso) itself: miso-chat or omit, never another project. ${projects.map((p) => `${p.slug} = ${p.title}`).join("; ")}.`,
           },
         },
         required: ["query"],

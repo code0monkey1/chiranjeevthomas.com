@@ -13,7 +13,11 @@ const config: NextConfig = {
   env: { PINECONE_NAMESPACE: buildNamespace() },
   images: { formats: ["image/avif", "image/webp"] },
   async redirects() {
-    return OLD_PATHS.map((source) => ({ source, destination: "/", permanent: true }));
+    return [
+      ...OLD_PATHS.map((source) => ({ source, destination: "/", permanent: true })),
+      // The Miso write-up became its project case study; keep old links and search results working.
+      { source: "/blog/how-miso-answers", destination: "/projects/miso-chat", permanent: true },
+    ];
   },
   async headers() {
     return [

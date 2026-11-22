@@ -16,9 +16,9 @@ links:
 
 Miso is the chat on this site: a tool-calling RAG agent that answers questions about my work and cites where each answer came from. This page covers how I built it, and the unglamorous part of running it: what each answer costs, how I cached answers without ever serving a stale one, and a deploy bug that caching made impossible to ignore.
 
-- **Suggestion bubbles now answer in under 0.1 s instead of about 2 s.** Their answers are computed when the site is built and shipped in the page, so a click makes no request.
+- **Suggestion bubbles answer in under 0.1 s instead of about 2 s.** Their answers are computed when the site is built and shipped in the page, so a click makes no request.
 - **A repeated first question costs no LLM call.** It comes from a cache that belongs to the deploy, so it can never outlive the content and code that produced it.
-- **The chat's vectors now belong to the deploy too.** A build in progress, a failed build or a rollback no longer leaves Miso searching content the pages don't show.
+- **The chat's vectors belong to the deploy too.** A build in progress, a failed build or a rollback no longer leaves Miso searching content the pages don't show.
 
 ## What Miso is
 
@@ -109,16 +109,16 @@ Whole documents dilute each embedding and cost almost twice the tokens. Small-to
 
 The Pinecone index uses integrated inference: the app sends text, and Pinecone embeds it with its hosted `llama-text-embed-v2` model, both when chunks are upserted and when a question is searched. No embedding model runs in the app, so the Netlify function only needs Pinecone's JavaScript client, with no model files or native binaries.
 
-Matches below **0.15** are dropped. Real matches on this index score about 0.2 to 0.35, while "What's his favourite pizza?" tops out at 0.12, so the chat says the topic isn't covered instead of quoting something unrelated. The floor doesn't apply to project-scoped searches.
+Matches below **0.15** are dropped. Real matches on this index score about 0.2 to 0.35, while an off-topic question about his food preferences tops out at 0.12, so the chat says the topic isn't covered instead of quoting something unrelated. The floor doesn't apply to project-scoped searches.
 
-Keyword search still matters: exact names ("InvoiceChaser") and phrasings like "where does he work *now*" (where the matching text says "Present") are where BM25 is strongest. So every search runs both.
+Keyword search still matters: exact names ("InvoiceChaser") and questions about his current role, which BM25 maps onto the wording of the experience section, are where it is strongest. So every search runs both.
 
 ## Decisions I measured
 
 - **Local embeddings → Pinecone integrated inference.** I first ran `bge-small-en-v1.5` locally with transformers.js. It worked, but it needed a native ONNX runtime plus 34 MB of model files inside the Netlify function, and it ranked the hard paraphrases below the cut. Pinecone's hosted model is stronger, adds nothing to the bundle, and is free at this scale.
-- **No reranker.** Pinecone's hosted `bge-reranker-v2-m3` scored nearly every candidate close to zero and moved "where does he work now?" to the contact chunk. It made results worse, and the free tier allows only 500 reranks a month.
+- **No reranker.** Pinecone's hosted `bge-reranker-v2-m3` scored nearly every candidate close to zero and moved a question about his current role to the contact chunk. It made results worse, and the free tier allows only 500 reranks a month.
 - **Fusion weights don't matter here.** Weighting meaning 1.5 to 3 times over keywords changed none of the test outcomes, so plain reciprocal rank fusion stays.
-- **Let the agent rewrite queries.** For "How does he keep tabs on what an AI is doing behind the scenes?", meaning search alone ranks the observability project 4th. The agent rewrites it to "monitor AI behind the scenes observability", scopes the search to that project, and answers from it.
+- **Let the agent rewrite queries.** For a vaguely worded question about watching what an AI agent does, meaning search alone ranks the observability project 4th. The agent rewrites it into a query that names observability, scopes the search to that project, and answers from it.
 - **Groq model.** Groq's free Developer plan no longer serves Llama 3.3 70B, so the agent uses `gpt-oss-120b`, which supports tool calling, with reasoning effort set to low.
 
 ## What you see while Miso works
@@ -145,7 +145,7 @@ A cache for Miso can't key on the question alone. Three things make it harder th
 
 Precomputing the bubbles handles most of the traffic on its own. The Blobs store catches people who type the same first question.
 
-## What Miso's cache does now
+## How Miso's cache works in production
 
 Pick a kind of question to see which layers it touches and what it costs:
 

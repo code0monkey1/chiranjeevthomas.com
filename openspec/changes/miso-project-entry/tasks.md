@@ -58,16 +58,16 @@
 
 ## 5. Redirect
 
-- [ ] 5.1 Add `{ source: "/blog/how-miso-answers", destination: "/projects/miso-chat", permanent: true }` to `redirects()` in `next.config.ts`.
+- [x] 5.1 Add `{ source: "/blog/how-miso-answers", destination: "/projects/miso-chat", permanent: true }` to `redirects()` in `next.config.ts`.
 - [ ] 5.2 After a build, confirm that `/blog/how-miso-answers` returns a permanent redirect to `/projects/miso-chat`, and that `/blog`, `rss.xml` and `sitemap.xml` no longer list the post while the sitemap lists `/projects/miso-chat`.
 
 ## 6. Agent and evals
 
-- [ ] 6.1 Update the `SYSTEM` rule in `lib/agent.ts` for questions about how this chat works: search unscoped or scoped to `miso-chat`, never to another project. Update the `project` parameter description to match. Remove the sentence "this chat (Miso) is not one of the projects".
-- [ ] 6.2 In `scripts/eval-chat.ts`, set `POST` to `/projects/miso-chat` and rename it `MISO_PAGE`. Change the Pinecone regression check to fail only when a search is scoped to a project other than `miso-chat`.
-- [ ] 6.3 Update the `POST_FIGURES` set only if task 2.6 changed any duration figure (it shouldn't, since only chunk and token counts change).
-- [ ] 6.4 Add an offline check: chunk ids are still unique with the new project, and the `miso` profile chunk and the `miso-chat` summary chunk both exist.
-- [ ] 6.5 Run `npm run eval:chat` with the keys set and confirm that every check passes, including the existing retrieval golden set (no other project displaced). Record the output in `evidence/eval.txt`.
+- [x] 6.1 Update the `SYSTEM` rule in `lib/agent.ts` for questions about how this chat works: search unscoped or scoped to `miso-chat`, never to another project. Update the `project` parameter description to match. Remove the sentence "this chat (Miso) is not one of the projects".
+- [x] 6.2 In `scripts/eval-chat.ts`, set `POST` to `/projects/miso-chat` and rename it `MISO_PAGE`. Change the Pinecone regression check to fail only when a search is scoped to a project other than `miso-chat`.
+- [x] 6.3 Update the `POST_FIGURES` set only if task 2.6 changed any duration figure (it shouldn't, since only chunk and token counts change).
+- [x] 6.4 Add an offline check: chunk ids are still unique with the new project, and the `miso` profile chunk and the `miso-chat` summary chunk both exist.
+- [x] 6.5 Run `npm run eval:chat` with the keys set and confirm that every check passes, including the existing retrieval golden set (no other project displaced). Record the output in `evidence/eval.txt`.
 
 ## 7. Build and verify
 

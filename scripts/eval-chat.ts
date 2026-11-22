@@ -73,6 +73,9 @@ check(sync.upserted === 1 && sync.deleted === 1, `edit one chunk + remove one â†
 console.log("\nChunk boundaries");
 const ids = new Set(docs.map((d) => d.id));
 check(ids.size === docs.length, `chunk ids are unique (${docs.length})`);
+// Miso the cat (profile) and Miso the project are separate chunks; the project's slug must not take the cat's id.
+check(ids.has("miso") && ids.has("miso-chat") && docs.find((d) => d.id === "miso")?.source === "profile", `"miso" (the cat) and "miso-chat" (the project) are both indexed`);
+check(!docs.some((d) => d.href === "/blog/how-miso-answers"), "no chunk links to the removed Miso post");
 check(docs.every((d) => /^(project:|post:)[a-z0-9-]+$|^(experience|skills|profile|overview)$/.test(d.source)), "every chunk has exactly one source");
 const projectSlugs = new Set(docs.filter((d) => d.source.startsWith("project:")).map((d) => d.project));
 check(docs.filter((d) => d.source.startsWith("project:")).every((d) => d.source === `project:${d.project}` && d.href.endsWith(d.project!) === (d.href !== "/#work")), "project chunks belong to their own project and link to its page");
@@ -454,22 +457,23 @@ if (process.env.GROQ_API_KEY) {
   }
   const how = await say("How does this chat find its answers?", []);
   check(how.trace.some((t) => t.kind === "tool"), `"How does this chat find its answers?" searches the portfolio (${how.trace.filter((t) => t.kind === "tool").length} searches)`);
-  // Miso answers questions about how it is built from the write-up, and cites it.
-  const POST = "/blog/how-miso-answers";
+  // Miso answers questions about how it is built from its case study, and cites it.
+  const MISO_PAGE = "/projects/miso-chat";
   const caching = await say("How does Miso cache answers?", []);
-  check(caching.grounded && caching.sources.some((x) => x.href === POST), `"How does Miso cache answers?" cites the write-up [${caching.sources.map((x) => x.href).join(", ")}]`);
+  check(caching.grounded && caching.sources.some((x) => x.href === MISO_PAGE), `"How does Miso cache answers?" cites the case study [${caching.sources.map((x) => x.href).join(", ")}]`);
   const down = await say("What happens to the chat if Pinecone goes down?", []);
   check(down.grounded && /keyword/i.test(down.answer), `"Pinecone down" answer describes the keyword fallback [${down.sources.map((x) => x.href).join(", ")}]: "${down.answer.slice(0, 80)}"`);
   // Regression from production: "to Miso" + "Pinecone" made the model scope the search to the agentic-rag project.
+  // Scoping to Miso's own project is fine; any other project is not.
   const miso = await say("What happens to Miso if Pinecone goes down?", []);
-  const misoScoped = miso.trace.some((t) => t.kind === "tool" && /project:/.test(t.label));
-  check(!misoScoped && miso.sources.some((x) => x.href === POST), `"What happens to Miso if Pinecone goes down?" searches unscoped and cites the write-up [${miso.sources.map((x) => x.href).join(", ")}]`);
+  const misoScoped = miso.trace.some((t) => t.kind === "tool" && /project: (?!miso-chat\b)/.test(t.label));
+  check(!misoScoped && miso.sources.some((x) => x.href === MISO_PAGE), `"What happens to Miso if Pinecone goes down?" is never scoped to another project and cites the case study [${miso.sources.map((x) => x.href).join(", ")}]`);
   const fast = await say("How fast is a cached answer?", []);
-  // Every duration Miso states must be one the post states (lookup ~60/72 ms, 0.4 s, under 0.1 s, the 1.5 s
+  // Every duration Miso states must be one the case study states (lookup ~60/72 ms, 0.4 s, under 0.1 s, the 1.5 s
   // timeout, ~2 s live answers, up to ~5 s with a cold start, 6.5 s cold start, 30 s 504s, 15â€“100 ms misses).
   const numbers = (fast.answer.match(/\d+(\.\d+)?\s?-?\s?(ms|milliseconds?|s|seconds?)\b/gi) ?? []).map((n) => n.replace(/\s|-/g, "").replace(/milliseconds?/i, "ms").replace(/seconds?/i, "s"));
   const POST_FIGURES = new Set(["60ms", "72ms", "0.4s", "0.1s", "1.5s", "2s", "2.0s", "5s", "6.5s", "30s", "15ms", "100ms", "1.6s", "1.8s"]);
-  check(fast.sources.some((x) => x.href === POST) && numbers.every((n) => POST_FIGURES.has(n)), `"How fast is a cached answer?" uses only the post's figures [${numbers.join(", ")}]`);
+  check(fast.sources.some((x) => x.href === MISO_PAGE) && numbers.every((n) => POST_FIGURES.has(n)), `"How fast is a cached answer?" uses only the case study's figures [${numbers.join(", ")}]`);
   // An uncovered personal fact must be declined, never invented (one live run once claimed a "favourite pizza").
   const pizza = await say("What's his favourite pizza?", []);
   check(!pizza.grounded && pizza.sources.length === 0 && !/margherita|pepperoni|hawaiian|neapolitan|veggie|cheese pizza|marinara|diavola/i.test(pizza.answer), `uncovered personal fact is declined, not invented: "${pizza.answer.slice(0, 70)}"`);
