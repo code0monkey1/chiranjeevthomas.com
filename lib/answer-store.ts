@@ -7,21 +7,30 @@
  */
 import { createHash } from "node:crypto";
 import { getDeployStore } from "@netlify/blobs";
-import { MODEL, notCovered, type AgentResult } from "./agent";
+import { notCovered, type AgentResult } from "./agent";
 import { normalizeQuestion, type CachedAnswer } from "./answer-cache";
 
 /**
- * Only trustworthy answers are cached: written by the live agent on the main model, grounded, with at
- * least one source, not a "the portfolio doesn't cover that" reply, and found with a working meaning
+ * Only trustworthy answers are cached: written by the live agent (main or fallback model), grounded, with
+ * at least one source, not a "the portfolio doesn't cover that" reply, and found with a working meaning
  * search. That last rule keeps keyword-only answers (Pinecone down, or a rolled-back deploy whose
  * namespace was pruned) from being frozen in a cache for the deploy's lifetime.
+ *
+ * Returns why an answer may not be cached, or null when it may. The reason is logged on skipped writes,
+ * so it never contains question-derived text.
  */
-export function isCacheable(r: AgentResult): boolean {
-  return r.mode === "live" && r.grounded && r.sources.length > 0 && r.model === MODEL && !notCovered(r.answer)
-    && r.search.meaningOk && r.search.meaningHits > 0
-    // Never freeze an answer that still shows raw citation markers (e.g. a format the parser didn't recognise).
-    && !/\[[^\]\s]{2,}\]/.test(r.answer);
+export function cacheSkipReason(r: AgentResult): string | null {
+  if (r.mode !== "live") return "demo";
+  // Checked before grounded: the agent marks a "not covered" answer ungrounded, and that is the more useful reason.
+  if (notCovered(r.answer)) return "not-covered";
+  if (!r.grounded) return "ungrounded";
+  if (r.sources.length === 0) return "no-sources";
+  if (!r.search.meaningOk || r.search.meaningHits <= 0) return "meaning-search-degraded";
+  // Never freeze an answer that still shows raw citation markers (e.g. a format the parser didn't recognise).
+  if (/\[[^\]\s]{2,}\]/.test(r.answer)) return "raw-citations";
+  return null;
 }
+export const isCacheable = (r: AgentResult): boolean => cacheSkipReason(r) === null;
 
 /** A hash of the normalised question. The visitor's text itself is never stored. */
 export const questionKey = (question: string) => `q/${createHash("sha256").update(normalizeQuestion(question)).digest("hex")}`;

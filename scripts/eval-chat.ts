@@ -15,7 +15,7 @@ import { STAMP_RECORD, corpusHash, denseSearch, pruneNamespaces, stamp, syncReco
 import { resolveNamespace } from "../lib/namespace";
 import { checkWidgets, getPosts, getProjects } from "../lib/content";
 import { cachedTrace, normalizeQuestion } from "../lib/answer-cache";
-import { answerStore, isCacheable, questionKey, setAnswerStore } from "../lib/answer-store";
+import { answerStore, cacheSkipReason, isCacheable, questionKey, setAnswerStore } from "../lib/answer-store";
 
 const CASES: Array<[string, string[]]> = [
   ["How does InvoiceChaser keep a human in the loop?", ["/projects/invoicechaser"]],
@@ -272,7 +272,7 @@ const limited: typeof fetch = async (_url, init) => {
 };
 const rl = await runAgent("What does he do?", [], "test-key", limited);
 check(models[1] === FALLBACK_MODEL && rl.mode === "live" && rl.trace.some((s) => /Rate limit/.test(s.label)), `429 on ${models[0]} → retried on ${models[1]}`);
-// Which model answered decides whether the answer may be cached (fallback answers never are).
+// Which model answered decides whether the answer may be cached (both models' answers may be cached; the model is recorded).
 check(rl.model === FALLBACK_MODEL, `result records the fallback model as the answerer (${rl.model})`);
 check(r.model === MODEL, `a run on the main model records it (${r.model})`);
 check(notCovered("I couldn’t find that in his portfolio.") && notCovered("The portfolio doesn’t mention his favourite pizza.") && !notCovered("He built InvoiceChaser."), "notCovered spots 'not in the portfolio' answers only");
@@ -293,15 +293,16 @@ check(normalizeQuestion("Has he used RAG?") !== normalizeQuestion("Has he used R
 const key = questionKey("How does InvoiceChaser keep a human in the loop?");
 check(/^q\/[0-9a-f]{64}$/.test(key) && !/invoice/i.test(key), `cache key is a hash with no question text (${key.slice(0, 14)}…)`);
 const good = { ...r, grounded: true, sources: [{ title: "InvoiceChaser", href: "/projects/invoicechaser" }], model: MODEL, search: { meaningOk: true, meaningHits: 4 } };
-check(isCacheable(good), "grounded, cited, main-model live answer is cacheable");
-check(!isCacheable({ ...good, mode: "demo" }), "retrieval-only (demo) answers are not cached");
-check(!isCacheable({ ...good, grounded: false }), "ungrounded answers are not cached");
-check(!isCacheable({ ...good, sources: [] }), "answers without sources are not cached");
-check(!isCacheable({ ...good, answer: "I couldn’t find that in his portfolio." }), "'not covered' answers are not cached");
-check(!isCacheable({ ...good, model: FALLBACK_MODEL }), "fallback-model answers are not cached");
-check(!isCacheable({ ...good, search: { meaningOk: false, meaningHits: 0 } }), "answers found while meaning search was down are not cached");
-check(!isCacheable({ ...good, answer: "He shipped search. [job\u2011grabbit]" }), "an answer still showing raw citation markers is never cached");
-check(!isCacheable({ ...good, search: { meaningOk: true, meaningHits: 0 } }), "answers with no meaning-search matches (e.g. pruned namespace) are not cached");
+check(isCacheable(good) && cacheSkipReason(good) === null, "grounded, cited, main-model live answer is cacheable");
+const skip = (r: typeof good, reason: string, msg: string) => check(!isCacheable(r) && cacheSkipReason(r) === reason, `${msg} (${reason})`);
+skip({ ...good, mode: "demo" }, "demo", "retrieval-only (demo) answers are not cached");
+skip({ ...good, grounded: false }, "ungrounded", "ungrounded answers are not cached");
+skip({ ...good, sources: [] }, "no-sources", "answers without sources are not cached");
+skip({ ...good, answer: "I couldn’t find that in his portfolio." }, "not-covered", "'not covered' answers are not cached");
+check(isCacheable({ ...good, model: FALLBACK_MODEL }), "grounded, cited fallback-model answers are cacheable");
+skip({ ...good, search: { meaningOk: false, meaningHits: 0 } }, "meaning-search-degraded", "answers found while meaning search was down are not cached");
+skip({ ...good, answer: "He shipped search. [job\u2011grabbit]" }, "raw-citations", "an answer still showing raw citation markers is never cached");
+skip({ ...good, search: { meaningOk: true, meaningHits: 0 } }, "meaning-search-degraded", "answers with no meaning-search matches (e.g. pruned namespace) are not cached");
 
 console.log("\nMeaning-search health");
 {
@@ -352,6 +353,7 @@ console.log("\nChat route with an in-memory cache store");
   const realFetch = globalThis.fetch;
   let groqCalls = 0;
   let fallbackNext = false;
+  let notCoveredNext = false;
   globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
     if (!String(url).includes("api.groq.com")) return realFetch(url, init);
     groqCalls++;
@@ -359,7 +361,7 @@ console.log("\nChat route with an in-memory cache store");
     if (fallbackNext && body.model === MODEL) return new Response(JSON.stringify({ error: { message: "Rate limit reached. Please try again in 9.5s." } }), { status: 429 });
     const message = body.messages.at(-1).role === "user"
       ? { role: "assistant", content: null, tool_calls: [{ id: "t1", type: "function", function: { name: "search_portfolio", arguments: JSON.stringify({ query: "InvoiceChaser human approval" }) } }] }
-      : { role: "assistant", content: "Every draft pauses for approval before anything is sent. [invoicechaser]" };
+      : { role: "assistant", content: notCoveredNext ? "I couldn’t find that in his portfolio. [invoicechaser]" : "Every draft pauses for approval before anything is sent. [invoicechaser]" };
     return new Response(JSON.stringify({ choices: [{ message }] }), { status: 200 });
   }) as typeof fetch;
 
@@ -398,10 +400,96 @@ console.log("\nChat route with an in-memory cache store");
   const s1 = sets;
   const fb = await ask("10.0.0.3", "What does InvoiceChaser do?");
   await new Promise((res) => setTimeout(res, 500));
-  check(fb.status === 200 && sets === s1, "an answer from the fallback model is shown but not cached");
+  const settle = () => new Promise((res) => setTimeout(res, 1500));
+  const logs: string[] = [];
+  const realInfo = console.info;
+  console.info = (...a: unknown[]) => { logs.push(a.join(" ")); };
+  const FQ = "What does InvoiceChaser do?";
+  const fkey = questionKey(FQ);
+  const entry = () => mem.get(fkey) as { model: string; createdAt: string; upgradeAfter?: string } | undefined;
+  fallbackNext = false;
+  await settle();
+  check(fb.status === 200 && sets === s1 + 1 && entry()?.model === FALLBACK_MODEL, "an answer from the fallback model is shown and cached, recorded as the fallback model's");
 
   const limitedNow = await ask("10.0.0.3", "Something not cached yet?");
   check(limitedNow.status === 429, "uncached questions still count against the rate limit");
+
+  // A fresh fallback entry (inside its 60 s window) is served as is, with no agent run.
+  const c0 = groqCalls;
+  const fresh = await ask("10.0.0.4", FQ);
+  await settle();
+  check(fresh.text.includes("Cache hit · runtime") && groqCalls === c0, "a fresh fallback entry is a cache hit and triggers no upgrade run (cooldown)");
+
+  // Past its window, a hit still returns the cached answer unchanged, and a main-model run replaces the entry.
+  const age = (ms: number) => mem.set(fkey, { ...entry()!, createdAt: new Date(Date.now() - ms).toISOString(), upgradeAfter: undefined });
+  age(120_000);
+  const cachedAnswer = (entry() as unknown as { result: { answer: string } }).result.answer;
+  const due = await ask("10.0.0.4", FQ);
+  check(due.text.includes("Cache hit · runtime") && due.text.includes(cachedAnswer.slice(0, 20)) && groqCalls === c0, "a due fallback hit is answered from the cache at once, before any upgrade run");
+  await settle();
+  check(groqCalls === c0 + 2 && entry()?.model === MODEL, "the background upgrade replaces the fallback entry with a main-model answer");
+
+  // A main-model entry is never replaced by a fallback one.
+  const sBefore = sets;
+  const cA = groqCalls;
+  const main = await ask("10.0.0.4", FQ);
+  await settle();
+  check(main.text.includes("Cache hit") && groqCalls === cA && sets === sBefore, "a main-model entry triggers no upgrade");
+
+  // Upgrade still rate-limited: the entry stays and a new cooldown is set.
+  fallbackNext = true;
+  mem.set(fkey, { ...(mem.get(fkey) as object), model: FALLBACK_MODEL, createdAt: new Date(Date.now() - 120_000).toISOString() });
+  const cB = groqCalls;
+  await ask("10.0.0.4", FQ);
+  await settle();
+  check(groqCalls > cB && entry()?.model === FALLBACK_MODEL, "an upgrade run that falls back again leaves the fallback entry in place");
+  const until = Date.parse(entry()?.upgradeAfter ?? "");
+  check(until > Date.now() + 9 * 60_000, "…and pushes the next upgrade attempt out by the cooldown");
+  check(logs.some((l) => /upgrade skipped still-fallback/.test(l)), "…and logs why the upgrade did not replace it");
+  const cC = groqCalls;
+  await ask("10.0.0.4", FQ);
+  await settle();
+  check(groqCalls === cC, "an entry inside its cooldown triggers no agent call");
+  fallbackNext = false;
+
+  // Two instances race: a main-model entry exists although this instance saw a miss. The fallback answer must not overwrite it.
+  const RQ = "Is InvoiceChaser a race?";
+  const rkey = questionKey(RQ);
+  const mainEntry = { result: { ...(mem.get(fkey) as { result: object }).result }, model: MODEL, createdAt: "2026-11-22T10:00:00.000Z" };
+  let hideFirst = true;
+  setAnswerStore({
+    async get(k) { if (k === rkey && hideFirst) { hideFirst = false; return null; } return (mem.get(k) as never) ?? null; },
+    async set(k, v) { mem.set(k, v); sets++; },
+  });
+  mem.set(rkey, mainEntry);
+  fallbackNext = true;
+  await ask("10.0.0.5", RQ);
+  await settle();
+  check((mem.get(rkey) as { model: string }).model === MODEL && (mem.get(rkey) as { createdAt: string }).createdAt === mainEntry.createdAt, "a fallback answer never overwrites a main-model entry");
+  check(logs.some((l) => /skip primary-exists key=[0-9a-f]{12}$/.test(l)), "…and the skip is logged");
+  fallbackNext = false;
+
+  // Skipped writes are logged with the rule and the hash, never the question.
+  notCoveredNext = true;
+  const NQ = "Does InvoiceChaser know the airspeed of a swallow?";
+  await ask("10.0.0.6", NQ);
+  await settle();
+  const line = logs.find((l) => /skip not-covered/.test(l)) ?? "";
+  check(/^\[answer-cache\] skip not-covered key=[0-9a-f]{12}$/.test(line) && !/swallow|invoicechaser/i.test(logs.join("\n")), "a rejected answer logs the rule and the hash key, no question text");
+  notCoveredNext = false;
+  console.info = realInfo;
+
+  // The upgrade budget is separate from visitor questions: spending it never uses visitor quota.
+  {
+    const { takeUpgrade, limited, resetLimiter } = await import("../lib/chat-limiter");
+    const saved = [process.env.CHAT_UPGRADE_DAILY_LIMIT, process.env.CHAT_DAILY_LIMIT];
+    process.env.CHAT_UPGRADE_DAILY_LIMIT = "1"; process.env.CHAT_DAILY_LIMIT = "1";
+    resetLimiter();
+    check(takeUpgrade() === true && takeUpgrade() === false, "takeUpgrade refuses once the upgrade budget is used up");
+    check(limited("9.9.9.9") === false, "…and spending it leaves the visitor quota untouched");
+    for (const [k, v] of [["CHAT_UPGRADE_DAILY_LIMIT", saved[0]], ["CHAT_DAILY_LIMIT", saved[1]]] as const) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+    resetLimiter();
+  }
 
   setAnswerStore(undefined);
   useDenseSearch();

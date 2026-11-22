@@ -1,32 +1,11 @@
 import { NextResponse, after } from "next/server";
 import { MODEL, retrievalAnswer, runAgent, type AgentResult, type Step, type Turn } from "@/lib/agent";
-import { cachedTrace } from "@/lib/answer-cache";
-import { answerStore, isCacheable, questionKey } from "@/lib/answer-store";
+import { cachedTrace, type CachedAnswer } from "@/lib/answer-cache";
+import { answerStore, cacheSkipReason, questionKey, type AnswerStore } from "@/lib/answer-store";
+import { limited, takeUpgrade } from "@/lib/chat-limiter";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const DAILY_LIMIT = Number(process.env.CHAT_DAILY_LIMIT || 30);
-/** Ceiling across all visitors (per function instance), so one abuser can't burn the free Groq/Pinecone quota. */
-const GLOBAL_DAILY_LIMIT = Number(process.env.CHAT_GLOBAL_DAILY_LIMIT || 500);
-const MAX_TRACKED_IPS = 5000;
-
-// Best effort: counters live in this function instance's memory and reset on cold starts.
-let today = "";
-let total = 0;
-const hits = new Map<string, number>();
-
-function limited(ip: string) {
-  const day = new Date().toISOString().slice(0, 10);
-  if (day !== today) { today = day; total = 0; hits.clear(); } // drop yesterday's counters
-  if (total >= GLOBAL_DAILY_LIMIT) return true;
-  if (!hits.has(ip) && hits.size >= MAX_TRACKED_IPS) hits.delete(hits.keys().next().value!); // bounded memory
-  const n = (hits.get(ip) ?? 0) + 1;
-  hits.set(ip, n);
-  if (n > DAILY_LIMIT) return true;
-  total += 1;
-  return false;
-}
 
 /**
  * The visitor's IP. On Netlify only the platform-set header is trusted: X-Forwarded-For can be
@@ -37,6 +16,39 @@ function clientIp(req: Request) {
   if (netlify) return netlify;
   if (process.env.NETLIFY) return "unknown"; // header missing on Netlify: share one bucket rather than trust the client
   return req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "local";
+}
+
+/** A fallback-model entry is first upgraded after the next Groq token window, then at most once per cooldown. */
+const FIRST_UPGRADE_MS = 60_000;
+const UPGRADE_COOLDOWN_MS = 10 * 60_000;
+/** Keys whose upgrade is running on this instance. */
+const upgrading = new Set<string>();
+/** The question's hash prefix for logs. Never the question itself. */
+const logKey = (cacheKey: string) => cacheKey.slice(2, 14);
+/** Run after the response has finished; outside a Next request (evals) run in the background. */
+const afterResponse = (job: () => Promise<void>) => { try { after(job); } catch { void job(); } };
+
+/**
+ * A hit written by the fallback model is served as is; once its cooldown has passed, one silent run on the
+ * main model replaces it. The claim (a pushed-out `upgradeAfter`) is written first so other instances back
+ * off, and nothing is overwritten unless the new answer is cacheable and from the main model.
+ */
+function maybeUpgrade(store: AnswerStore, cacheKey: string, question: string, hit: CachedAnswer, groqKey: string | undefined) {
+  if (hit.model === MODEL || !groqKey || upgrading.has(cacheKey)) return;
+  const dueAt = hit.upgradeAfter ? Date.parse(hit.upgradeAfter) : Date.parse(hit.createdAt) + FIRST_UPGRADE_MS;
+  if (!(Date.now() >= dueAt) || !takeUpgrade()) return;
+  upgrading.add(cacheKey);
+  afterResponse(async () => {
+    try {
+      await store.set(cacheKey, { ...hit, upgradeAfter: new Date(Date.now() + UPGRADE_COOLDOWN_MS).toISOString() });
+      const r = await runAgent(question, [], groqKey);
+      const reason = cacheSkipReason(r) ?? (r.model === MODEL ? null : "still-fallback");
+      if (reason) console.info(`[answer-cache] upgrade skipped ${reason} key=${logKey(cacheKey)}`);
+      else await store.set(cacheKey, { result: r, model: MODEL, createdAt: new Date().toISOString() });
+    } catch (e) {
+      console.warn(`[answer-cache] upgrade failed key=${logKey(cacheKey)}: ${(e as Error).message.slice(0, 120)}`);
+    } finally { upgrading.delete(cacheKey); }
+  });
 }
 
 /** Health check: tells the page whether live answers are available. Never reveals the key. */
@@ -66,7 +78,10 @@ export async function POST(req: Request) {
     const t0 = performance.now();
     const hit = await store.get(cacheKey);
     const ms = Math.round(performance.now() - t0);
-    if (hit) return ndjson([{ type: "done", result: { ...hit.result, trace: cachedTrace(hit, "runtime", ms) } }]);
+    if (hit) {
+      maybeUpgrade(store, cacheKey, question, hit, process.env.GROQ_API_KEY);
+      return ndjson([{ type: "done", result: { ...hit.result, trace: cachedTrace(hit, "runtime", ms) } }]);
+    }
     cacheStep = { kind: "think", label: `Cache miss · ${ms}ms`, detail: "no stored answer for this question in this deploy, so the agent runs" };
   }
 
@@ -82,9 +97,15 @@ export async function POST(req: Request) {
   if (store) {
     const write = async () => {
       const result = await finished;
-      if (result && isCacheable(result)) await store.set(cacheKey, { result, model: result.model ?? MODEL, createdAt: new Date().toISOString() });
+      if (!result) return console.info(`[answer-cache] skip no-result key=${logKey(cacheKey)}`);
+      const reason = cacheSkipReason(result);
+      if (reason) return console.info(`[answer-cache] skip ${reason} key=${logKey(cacheKey)}`);
+      const model = result.model ?? MODEL;
+      // Never downgrade: a main-model entry (maybe written by another instance meanwhile) stays.
+      if (model !== MODEL && (await store.get(cacheKey))?.model === MODEL) return console.info(`[answer-cache] skip primary-exists key=${logKey(cacheKey)}`);
+      await store.set(cacheKey, { result, model, createdAt: new Date().toISOString() });
     };
-    try { after(write); } catch { void write(); } // outside a Next request (evals): write in the background
+    afterResponse(write);
   }
 
   // Stream NDJSON: trace steps as they happen, answer tokens as Groq writes them, then the final result.
