@@ -59,7 +59,7 @@
 ## 5. Redirect
 
 - [x] 5.1 Add `{ source: "/blog/how-miso-answers", destination: "/projects/miso-chat", permanent: true }` to `redirects()` in `next.config.ts`.
-- [ ] 5.2 After a build, confirm that `/blog/how-miso-answers` returns a permanent redirect to `/projects/miso-chat`, and that `/blog`, `rss.xml` and `sitemap.xml` no longer list the post while the sitemap lists `/projects/miso-chat`.
+- [x] 5.2 After a build, confirm that `/blog/how-miso-answers` returns a permanent redirect to `/projects/miso-chat`, and that `/blog`, `rss.xml` and `sitemap.xml` no longer list the post while the sitemap lists `/projects/miso-chat`.
 
 ## 6. Agent and evals
 
@@ -71,9 +71,9 @@
 
 ## 7. Build and verify
 
-- [ ] 7.1 Run `npm run build`. It must pass: schema, tags and widget-marker validation, the vector sync into the new namespace, and the precomputed bubble answers.
+- [x] 7.1 Run `npm run build`. It must pass: schema, tags and widget-marker validation, the vector sync into the new namespace, and the precomputed bubble answers.
 - [ ] 7.2 Read the regenerated `lib/generated/answers.json` and confirm that no bubble answer links to `/blog/how-miso-answers` or shows raw citation markers.
-- [ ] 7.3 Check the home grid. On "All", the card is third after InvoiceChaser in the two-column layout. On the AI engineering tab, five cards show in the featured layout. Check both at phone width.
+- [x] 7.3 Check the home grid. On "All", the card is third after InvoiceChaser in the two-column layout. On the AI engineering tab, five cards show in the featured layout. Check both at phone width.
 - [ ] 7.4 Review `git diff` and commit in focused commits: content, cover, chat link, redirect, agent and evals.
 
 ## 8. Deploy preview checks
