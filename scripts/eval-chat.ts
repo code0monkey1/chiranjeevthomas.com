@@ -13,6 +13,7 @@ import { buildIndex, fuse, keywordSearch, search, searchWithTrace, useDenseSearc
 import { FALLBACK_MODEL, MAX_SEARCHES, MODEL, finalize, notCovered, runAgent } from "../lib/agent";
 import { STAMP_RECORD, corpusHash, denseSearch, pruneNamespaces, stamp, syncRecords, vectorSearchEnabled, type PrunableIndex, type VectorNamespace } from "../lib/vector-store";
 import { resolveNamespace } from "../lib/namespace";
+import { checkWidgets, getPosts, getProjects } from "../lib/content";
 import { cachedTrace, normalizeQuestion } from "../lib/answer-cache";
 import { answerStore, isCacheable, questionKey, setAnswerStore } from "../lib/answer-store";
 
@@ -79,6 +80,16 @@ check(docs.filter((d) => d.project).every((d) => projectSlugs.has(d.project)), "
 const scoped = keywordSearch("tracing evals tool gating approval", 10, "invoicechaser");
 check(scoped.length > 0 && scoped.every((d) => d.project === "invoicechaser"), `scoped search stays inside one project [${scoped.map((d) => d.id).join(", ")}]`);
 check(scoped.some((d) => d.source.startsWith("post:")), "scoped search includes posts written about that project");
+
+console.log("\nContent: widget markers");
+{
+  let msg = "";
+  try { checkWidgets("posts/example.md", "Intro\n\n<!-- widget:nope -->\n"); } catch (e) { msg = (e as Error).message; }
+  check(msg.includes("posts/example.md") && msg.includes('"nope"'), `an unknown widget name fails with the file and name (${msg.slice(0, 60)}…)`);
+  let ok = true;
+  try { checkWidgets("posts/example.md", "<!-- widget:rag-pipeline -->"); getProjects(); getPosts({ includeDrafts: true }); } catch { ok = false; }
+  check(ok, "known widget names and all current content pass the check");
+}
 
 console.log("\nNamespace per content version");
 {
@@ -255,6 +266,13 @@ check(models[1] === FALLBACK_MODEL && rl.mode === "live" && rl.trace.some((s) =>
 check(rl.model === FALLBACK_MODEL, `result records the fallback model as the answerer (${rl.model})`);
 check(r.model === MODEL, `a run on the main model records it (${r.model})`);
 check(notCovered("I couldn’t find that in his portfolio.") && !notCovered("He built InvoiceChaser."), "notCovered spots 'not in the portfolio' answers only");
+// The system prompt separates persona questions (playful, no search) from questions about how the chat works (search + cite).
+let systemPrompt = "";
+await runAgent("hi", [], "test-key", (async (_u: unknown, init?: RequestInit) => {
+  systemPrompt = JSON.parse(String(init?.body)).messages[0].content;
+  return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content: "Meow!" } }] }), { status: 200 });
+}) as typeof fetch);
+check(/as a character[^\n]*without searching/.test(systemPrompt) && /how this chat works[^\n]*call search_portfolio/.test(systemPrompt), "prompt: persona questions skip search, questions about how the chat works must search and cite");
 
 console.log("\nAnswer cache");
 check(
@@ -422,6 +440,12 @@ if (process.env.GROQ_API_KEY) {
   check(!canned.test(math.answer) && /chiranjeev|portfolio|work/i.test(math.answer), `off-topic gets an in-character redirect: "${math.answer.slice(0, 90)}"`);
   const why = await say("why can't you help?", h2);
   check(!canned.test(why.answer) && /portfolio|site|chiranjeev/i.test(why.answer), `"why?" is explained, not refused: "${why.answer.slice(0, 90)}"`);
+  for (const q of ["Who are you?", "Are you a real cat?"]) {
+    const p = await say(q, []);
+    check(!p.trace.some((t) => t.kind === "tool"), `persona question "${q}" answered without searching: "${p.answer.slice(0, 60)}"`);
+  }
+  const how = await say("How does this chat find its answers?", []);
+  check(how.trace.some((t) => t.kind === "tool"), `"How does this chat find its answers?" searches the portfolio (${how.trace.filter((t) => t.kind === "tool").length} searches)`);
   const cat = await say("does he have a cat?", []);
   check(/miso|ragdoll/i.test(cat.answer), `knows about Miso: "${cat.answer.slice(0, 90)}"`);
 }

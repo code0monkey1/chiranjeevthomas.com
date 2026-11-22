@@ -3,16 +3,16 @@
 ## 1. Baseline measurements (do first, before `cache-miso-answers` reaches production)
 
 - [x] 1.1 Create `measurements.md` in this change and record the pre-cache baseline on production: for each of the 4 suggestions, first-words and total time from the trace header (median of 5 runs), Groq rounds and searches from the trace; verify every row names its source (screenshot path or trace text) and the deploy ID it was measured on
-- [ ] 1.2 Record the fixed facts with sources: Groq free-tier tokens/min (provider docs URL), Pinecone Starter namespace cap (docs URL), corpus chunk count and approximate tokens (`buildIndex()` output), recent `deploy_time` (Netlify deploy record); verify each has a URL, command or code line
+- [x] 1.2 Record the fixed facts with sources: Groq free-tier tokens/min (provider docs URL), Pinecone Starter namespace cap (docs URL), corpus chunk count and approximate tokens (`buildIndex()` output), recent `deploy_time` (Netlify deploy record); verify each has a URL, command or code line
 
 ## 2. Widgets in posts
 
-- [ ] 2.1 Move widget names to `components/widgets/names.ts` (`WIDGET_NAMES`), use it in the `Widget` registry, and make content loading throw on an unknown `<!-- widget:… -->` name in any post or project; add an eval/unit check that a fake body with `widget:nope` throws with the file and name, and verify `npm run build` still passes for current content
-- [ ] 2.2 Render widgets in `app/blog/[slug]/page.tsx` with `splitWidgets` exactly like case studies; verify with a temporary draft post containing `<!-- widget:rag-pipeline -->` that the widget appears at the marker (then remove the temporary post)
+- [x] 2.1 Move widget names to `components/widgets/names.ts` (`WIDGET_NAMES`), use it in the `Widget` registry, and make content loading throw on an unknown `<!-- widget:… -->` name in any post or project; add an eval/unit check that a fake body with `widget:nope` throws with the file and name, and verify `npm run build` still passes for current content
+- [x] 2.2 Render widgets in `app/blog/[slug]/page.tsx` with `splitWidgets` exactly like case studies; verify with a temporary draft post containing `<!-- widget:rag-pipeline -->` that the widget appears at the marker (then remove the temporary post)
 
 ## 2b. Miso searches questions about how it works
 
-- [ ] 2.3 Split the "Questions about you (Miso)" rule in `SYSTEM` (`lib/agent.ts`) per design.md §5a; add mocked-model eval cases checking the prompt contains both rules, and live eval cases: "Who are you?" and "Are you a real cat?" make no `search_portfolio` call, while "How does this chat find its answers?" makes at least one; verify `npm run eval:chat` (offline and with keys) passes
+- [x] 2.3 Split the "Questions about you (Miso)" rule in `SYSTEM` (`lib/agent.ts`) per design.md §5a; add mocked-model eval cases checking the prompt contains both rules, and live eval cases: "Who are you?" and "Are you a real cat?" make no `search_portfolio` call, while "How does this chat find its answers?" makes at least one; verify `npm run eval:chat` (offline and with keys) passes
 
 ## 3. Animated diagrams
 

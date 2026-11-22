@@ -3,6 +3,7 @@ import path from "node:path";
 import matter from "gray-matter";
 import * as yaml from "js-yaml";
 import { z } from "zod";
+import { WIDGET_NAMES } from "../components/widgets/names";
 
 const ROOT = path.join(process.cwd(), "content");
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), "utf8");
@@ -77,6 +78,13 @@ export type Project = z.infer<typeof ProjectSchema> & { slug: string; body: stri
 
 const STATUS_RANK: Record<string, number> = { "At Grabbit": 0, Live: 1, "SaaS product": 2, "Open source": 3, "In progress": 4 };
 
+/** Fails the build on a <!-- widget:name --> marker that names no widget. */
+function checkWidgets(file: string, body: string) {
+  for (const [, name] of body.matchAll(/<!--\s*widget:([a-z0-9-]+)\s*-->/g)) {
+    if (!(WIDGET_NAMES as readonly string[]).includes(name)) throw new Error(`${file}: unknown widget "${name}" (known: ${WIDGET_NAMES.join(", ")})`);
+  }
+}
+
 export function getProjects(): Project[] {
   const dir = path.join(ROOT, "projects");
   return fs
@@ -88,6 +96,7 @@ export function getProjects(): Project[] {
       const p = ProjectSchema.parse(data);
       checkTags(`projects/${file} (types)`, p.types);
       checkTags(`projects/${file} (tags)`, p.tags);
+      checkWidgets(`projects/${file}`, content);
       return { ...p, slug, body: content, allTags: Array.from(new Set([...p.types, ...p.tags])) };
     })
     .sort(
@@ -98,6 +107,7 @@ export function getProjects(): Project[] {
         b.date.getTime() - a.date.getTime(),
     );
 }
+export { checkWidgets };
 export const getProject = (slug: string) => getProjects().find((p) => p.slug === slug);
 
 /* ---------- posts ---------- */
@@ -123,6 +133,7 @@ export function getPosts({ includeDrafts = false } = {}): Post[] {
       const { data, content } = matter(fs.readFileSync(path.join(dir, file), "utf8"));
       const p = PostSchema.parse(data);
       checkTags(`posts/${file}`, p.tags);
+      checkWidgets(`posts/${file}`, content);
       const words = content.split(/\s+/).filter(Boolean).length;
       return { ...p, slug, body: content, readingMinutes: Math.max(1, Math.round(words / 220)) };
     })

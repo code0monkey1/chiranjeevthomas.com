@@ -25,7 +25,17 @@ production deploy that predates `cache-miso-answers`.
 
 ## Fixed facts
 
-<!-- Filled by task 1.2: Groq free-tier tokens/min, Pinecone Starter namespace cap, corpus chunk count and tokens, deploy_time. -->
+| Fact | Value | Source (checked 2026-11-22) |
+|---|---|---|
+| Groq limits for `openai/gpt-oss-120b` (and `gpt-oss-20b`) | 30 requests/min, 1,000 requests/day, 8K tokens/min, 200K tokens/day | https://console.groq.com/docs/rate-limits (table, "base limits") |
+| Groq calls per live answer | 2 (decide-to-search round + answer round) | baseline traces above; `runAgent` in `lib/agent.ts` |
+| So: live answers per day before hitting the request cap | about 500 (1,000 ÷ 2) | derived from the two rows above |
+| Pinecone Starter namespaces per serverless index | 100 | https://docs.pinecone.io/guides/data/implement-multitenancy |
+| Corpus | 43 chunks, ~5,876 embedding tokens (≈4 chars/token) | `sync:vectors` log, `CONTEXT=production`, 2026-11-21: "43 upserted (~5876 tokens embedded)" |
+| Full embed of a new namespace vs. unchanged check | ~5.8 s vs ~5.9–6.4 s total sync time; both dominated by list/fetch round trips, plus a 5 s indexing wait only when something was upserted | same `sync:vectors` logs (laptop → Pinecone us-east-1) |
+| Production build+deploy time before this change | 65 s (`deploy_time`) | Netlify deploy record `6aeeca6187e1713c8c6069bd` |
+| Precompute step (4 suggestions) | 43 s locally (8 s gaps between runs to respect 8K tokens/min) | `npx tsx scripts/precompute-answers.ts`, 2026-11-21 |
+| Runtime cache on Netlify (deploy preview 1) | miss lookup 44 ms / 16 ms; hit lookup 52 ms | `/api/chat` traces, deploy preview `6b024e4b`, 2026-11-22 |
 
 ## After caching
 
