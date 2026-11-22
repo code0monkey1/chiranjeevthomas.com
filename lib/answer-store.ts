@@ -29,8 +29,26 @@ export interface AnswerStore {
   set(key: string, value: CachedAnswer): Promise<void>;
 }
 
-/** Next patches global fetch with its data cache; Blobs traffic must never be cached by it. */
-const noStoreFetch: typeof fetch = (input, init) => fetch(input, { ...init, cache: "no-store" });
+/**
+ * Next patches global fetch with its data cache, and Blobs traffic must never go through it. Same approach
+ * as Netlify's own Next.js adapter (regional-blob-store): the fetch saved before Next patched it, marked
+ * internal so even a patched fetch skips the data cache.
+ */
+const blobsFetch: typeof fetch = (input, init) => {
+  const g = globalThis as Record<symbol, unknown>;
+  const base = (g[Symbol.for("nf-not-patched-fetch")] as typeof fetch | undefined) ?? ((fetch as unknown as { _nextOriginalFetch?: typeof fetch })._nextOriginalFetch ?? fetch);
+  return base(input, { ...init, next: { ...(init as { next?: object })?.next, internal: true } } as RequestInit);
+};
+/** Like the adapter: an explicit region, so the client never has to resolve one at request time. */
+const BLOBS_REGION = process.env.USE_REGIONAL_BLOBS?.toUpperCase() === "TRUE" ? undefined : "us-east-2";
+
+/** A cache that hangs must not hang the chat: give up and answer live. */
+const GET_TIMEOUT_MS = 1500;
+const SET_TIMEOUT_MS = 4000;
+function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
+  let t: ReturnType<typeof setTimeout>;
+  return Promise.race([p, new Promise<T>((_, rej) => { t = setTimeout(() => rej(new Error(`${what} timed out after ${ms}ms`)), ms); })]).finally(() => clearTimeout(t));
+}
 
 let injected: AnswerStore | null | undefined;
 /** Tests pass an in-memory store; `null` turns the cache off. */
@@ -40,7 +58,7 @@ let warned = false;
 const warnOnce = (what: string, err: unknown) => {
   if (warned) return;
   warned = true;
-  console.warn(`[answer-cache] ${what} failed, answering live:`, (err as Error).message);
+  console.warn(`[answer-cache] ${what} failed, answering live: ${(err as Error).name}: ${(err as Error).message}`);
 };
 
 /** The deploy's store, or null where Netlify Blobs isn't available (next dev, evals). */
@@ -48,17 +66,17 @@ export function answerStore(): AnswerStore | null {
   if (injected !== undefined) return safeStore(injected);
   let blobs: ReturnType<typeof getDeployStore>;
   try {
-    blobs = getDeployStore({ name: "miso-answers", fetch: noStoreFetch });
+    blobs = getDeployStore({ name: "miso-answers", fetch: blobsFetch, ...(BLOBS_REGION ? { region: BLOBS_REGION } : {}) } as unknown as { name: string });
   } catch (err) {
     if ((err as Error).name !== "MissingBlobsEnvironmentError") warnOnce("opening the store", err);
     return null;
   }
   return {
     async get(key) {
-      try { return (await blobs.get(key, { type: "json" })) as CachedAnswer | null; } catch (err) { warnOnce("read", err); return null; }
+      try { return (await withTimeout(blobs.get(key, { type: "json" }), GET_TIMEOUT_MS, "read")) as CachedAnswer | null; } catch (err) { warnOnce("read", err); return null; }
     },
     async set(key, value) {
-      try { await blobs.setJSON(key, value); } catch (err) { warnOnce("write", err); }
+      try { await withTimeout(blobs.setJSON(key, value), SET_TIMEOUT_MS, "write"); } catch (err) { warnOnce("write", err); }
     },
   };
 }
@@ -67,7 +85,7 @@ export function answerStore(): AnswerStore | null {
 export function safeStore(s: AnswerStore | null): AnswerStore | null {
   if (!s) return null;
   return {
-    async get(key) { try { return await s.get(key); } catch (err) { warnOnce("read", err); return null; } },
-    async set(key, value) { try { await s.set(key, value); } catch (err) { warnOnce("write", err); } },
+    async get(key) { try { return await withTimeout(s.get(key), GET_TIMEOUT_MS, "read"); } catch (err) { warnOnce("read", err); return null; } },
+    async set(key, value) { try { await withTimeout(s.set(key, value), SET_TIMEOUT_MS, "write"); } catch (err) { warnOnce("write", err); } },
   };
 }

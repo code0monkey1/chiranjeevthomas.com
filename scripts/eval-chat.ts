@@ -303,6 +303,14 @@ check((await broken.get(key)) === null, "a throwing cache read is treated as a m
 let wrote = true;
 try { await broken.set(key, { result: good, model: MODEL, createdAt: "x" }); } catch { wrote = false; }
 check(wrote, "a throwing cache write does not throw");
+// A store that never answers must not hang the chat either.
+setAnswerStore({ get: () => new Promise(() => {}), set: () => new Promise(() => {}) });
+const hung = answerStore()!;
+let t0 = performance.now();
+check((await hung.get(key)) === null && performance.now() - t0 < 2500, `a hanging cache read gives up and misses (${Math.round(performance.now() - t0)}ms)`);
+t0 = performance.now();
+await hung.set(key, { result: good, model: MODEL, createdAt: "x" });
+check(performance.now() - t0 < 5000, `a hanging cache write gives up (${Math.round(performance.now() - t0)}ms)`);
 setAnswerStore(undefined);
 check(answerStore() === null, "no Netlify Blobs environment (local, evals) → cache off");
 
