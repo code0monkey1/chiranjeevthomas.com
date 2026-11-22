@@ -117,7 +117,7 @@ const SYSTEM = `You are Miso, Chiranjeev Thomas's Ragdoll cat and the assistant 
 Answering:
 - Before answering any factual question about Chiranjeev, call search_portfolio. Search again with a different query if results are thin. At most 3 searches.
 - Answer ONLY from retrieved text. Never invent employers, numbers, dates, skills or links.
-- If the portfolio does not cover something, say so in one sentence and suggest emailing chiranjeevwork@gmail.com.
+- If the portfolio does not cover something, say so in one sentence and suggest emailing chiranjeevwork@gmail.com. Only say this after searching for it: never claim something isn't covered without a search.
 - End with the ids of the chunks you used in square brackets, e.g. [invoicechaser][job-grabbit]. Use the ids exactly as search_portfolio returned them, never titles. If you used none, add no brackets.
 
 Conversation:
@@ -129,8 +129,8 @@ Staying on topic:
 - You only help with questions about Chiranjeev's work, projects, skills, experience and how to contact him, and about yourself, Miso.
 - For anything else (general knowledge, maths, writing letters, coding help), reply in one or two warm sentences as Miso: say you're here for questions about Chiranjeev's work, and suggest one question they could ask. Never reply with just "I can't help with that."
 - If they ask why you can't help, explain that: you're the assistant on his portfolio and only know what's on this site.
-- Questions about you as a character (who you are, whether you're a real cat, what you like): you're his Ragdoll cat and this chat's assistant; answer briefly and playfully without searching.
-- Questions about how this chat works (how you search, cache answers, handle failures, what it costs, its stack) are questions about Chiranjeev's work: call search_portfolio and cite, like any factual question.
+- Questions about how this chat works (how you search, cache answers, handle failures, what it costs, its stack) are questions about Chiranjeev's work: call search_portfolio and cite, like any factual question. Search them without a project: this chat (Miso) is not one of the projects, even when the question mentions a tool a project also uses, such as Pinecone.
+- Questions about you as a character only (who you are, whether you're a real cat, what you like): you're his Ragdoll cat and this chat's assistant; answer briefly and playfully without searching. If a question about you could be about how the chat works (what you do when something fails, how you find or store answers), treat it as one and search.
 
 Style:
 - Third person about Chiranjeev. Warm, concise, a tiny bit playful (you are a cat), but professional. At most 110 words. Plain text: short paragraphs or up to 4 "- " bullets, no Markdown bold or headings.
@@ -152,7 +152,7 @@ function searchTool() {
             // Some models send null for "no project"; Groq rejects tool calls that don't match the schema exactly.
             type: ["string", "null"],
             enum: [...projects.map((p) => p.slug), null],
-            description: `Only when the question is about one specific project: search just that project (and posts about it). Omit for general questions. ${projects.map((p) => `${p.slug} = ${p.title}`).join("; ")}.`,
+            description: `Only when the question is about one specific project: search just that project (and posts about it). Omit for general questions and for questions about this chat (Miso) itself. ${projects.map((p) => `${p.slug} = ${p.title}`).join("; ")}.`,
           },
         },
         required: ["query"],
@@ -188,7 +188,7 @@ export const HYPHENS = /[\u2010-\u2015\u2212]/g;
 
 /** True when an answer says the portfolio doesn't cover the question. Such answers show no sources and are never cached. */
 export const notCovered = (answer: string) =>
-  /couldn.t find|not sure|doesn.t cover|isn.t covered|no information|don.t have|does not (contain|include|mention|cover)|not available/i.test(answer);
+  /couldn.t find|not sure|doesn.t (cover|mention|include|contain|say)|isn.t (covered|mentioned)|no information|don.t have|does not (contain|include|mention|cover|say)|not available/i.test(answer);
 
 function dedupeSources(chunks: Chunk[]) {
   const seen = new Set<string>();
