@@ -20,7 +20,7 @@
 <animate attributeName="fill" dur="10s" repeatCount="indefinite" keyTimes="0.0000;0.0850;0.1000;0.2100;0.2400;1.0000" values="#FAFAF9;#FAFAF9;#FFF1E8;#FFF1E8;#FAFAF9;#FAFAF9"/>
 </rect>
 <text x="355.0" y="137.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#1C1917" text-anchor="middle" >buildIndex()</text>
-<text x="355.0" y="156.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >40 chunks · 1 per ## section</text>
+<text x="355.0" y="156.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#57534E" text-anchor="middle" >1 chunk per ## section</text>
 </g>
 <g>
 <rect x="490" y="108" width="200" height="66" rx="12" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="1.5">

@@ -16,8 +16,8 @@
 
 ## 3. Animated diagrams
 
-- [ ] 3.1 Copy `miso-pipeline`, `meaning-vs-keywords` and `rank-fusion` SVGs to `public/media/`; write a small script that generates `*-static.svg` final-frame variants (strip SMIL elements, apply each animation's final value); verify each static file renders every label (open in a browser) and has no `<animate` left (`grep -c`)
-- [ ] 3.2 Redraw `vector-sync.svg` (plus its static variant) to show content-addressed namespaces: unchanged content reuses the namespace, changed content fills a new one, live keeps reading the old one until publish; verify its alt text describes that, and update the README image to the redrawn version
+- [x] 3.1 Copy `miso-pipeline`, `meaning-vs-keywords` and `rank-fusion` SVGs to `public/media/`; write a small script that generates `*-static.svg` final-frame variants (strip SMIL elements, apply each animation's final value); verify each static file renders every label (open in a browser) and has no `<animate` left (`grep -c`)
+- [x] 3.2 Redraw `vector-sync.svg` (plus its static variant) to show content-addressed namespaces: unchanged content reuses the namespace, changed content fills a new one, live keeps reading the old one until publish; verify its alt text describes that, and update the README image to the redrawn version
 - [ ] 3.3 Check all four diagrams in light and dark theme and at 360 px width; verify text stays legible (fix fills if not) and record screenshots in the change
 
 ## 4. Miso widgets

@@ -98,7 +98,7 @@ Each search returns its top 10. Every chunk then scores `Σ 1 / (60 + rank)` ove
 ## Keeping the vectors current
 
 <p align="center">
-  <img src="docs/vector-sync.svg" alt="Animated deploy sync: unchanged chunks are skipped, edited and new chunks are upserted and re-embedded by Pinecone, deleted chunks are removed." width="100%">
+  <img src="docs/vector-sync.svg" alt="Animated diagram: each version of the content gets its own Pinecone namespace. While the live deploy searches its namespace, a build with edited content fills a new one; publishing switches pages, answers and vectors together; pruning after publish keeps the live namespace plus the 4 most recently published; a CSS-only build reuses the namespace and embeds nothing." width="100%">
 </p>
 
 - **One namespace per version of the content.** Each Netlify build syncs into a Pinecone namespace named after a hash of its chunks, e.g. `production-42f3b881` ([lib/namespace.ts](lib/namespace.ts)), and bakes that name into the server bundle. The live site keeps searching its own namespace until Netlify publishes the new deploy, which switches pages, precomputed answers and vectors in one step. A build that fails never changes what visitors are searching.
