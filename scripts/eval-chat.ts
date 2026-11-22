@@ -193,6 +193,13 @@ const r = await runAgent("How does InvoiceChaser keep a human in the loop?", [],
 check(r.mode === "live" && r.trace.some((s) => s.kind === "tool"), "tool was called and traced");
 check(!r.answer.includes("["), "citation markers stripped from answer");
 check(finalize("Not covered here. [ ]", new Map()).answer === "Not covered here.", "empty citation brackets are removed");
+{
+  // Regression from production: gpt-oss wrote ids with U+2011 non-breaking hyphens, so they were neither
+  // resolved nor stripped, and the cached bubble showed "[job‑grabbit]" to every visitor.
+  const chunk = docs.find((d) => d.id === "job-grabbit")!;
+  const f = finalize("He shipped search at Grabbit. [grabbit\u2011llm\u2011search][job\u2011grabbit]", new Map([[chunk.id, chunk]]));
+  check(!f.answer.includes("[") && f.sources.some((c) => c.id === "job-grabbit"), `Unicode-hyphen citations are resolved and stripped ("${f.answer}")`);
+}
 check(finalize("**DevReferral** is full-stack.\n* React\n## Stack [devreferral]", new Map()).answer === "DevReferral is full-stack.\n- React\nStack", "Markdown emphasis, bullets and headings become plain text");
 check(r.sources.every((s) => s.href.startsWith("/")), "sources only from retrieved chunks (fabricated id dropped)");
 
@@ -290,6 +297,7 @@ check(!isCacheable({ ...good, sources: [] }), "answers without sources are not c
 check(!isCacheable({ ...good, answer: "I couldn’t find that in his portfolio." }), "'not covered' answers are not cached");
 check(!isCacheable({ ...good, model: FALLBACK_MODEL }), "fallback-model answers are not cached");
 check(!isCacheable({ ...good, search: { meaningOk: false, meaningHits: 0 } }), "answers found while meaning search was down are not cached");
+check(!isCacheable({ ...good, answer: "He shipped search. [job\u2011grabbit]" }), "an answer still showing raw citation markers is never cached");
 check(!isCacheable({ ...good, search: { meaningOk: true, meaningHits: 0 } }), "answers with no meaning-search matches (e.g. pruned namespace) are not cached");
 
 console.log("\nMeaning-search health");
@@ -446,6 +454,18 @@ if (process.env.GROQ_API_KEY) {
   }
   const how = await say("How does this chat find its answers?", []);
   check(how.trace.some((t) => t.kind === "tool"), `"How does this chat find its answers?" searches the portfolio (${how.trace.filter((t) => t.kind === "tool").length} searches)`);
+  // Miso answers questions about how it is built from the write-up, and cites it.
+  const POST = "/blog/how-miso-answers";
+  const caching = await say("How does Miso cache answers?", []);
+  check(caching.grounded && caching.sources.some((x) => x.href === POST), `"How does Miso cache answers?" cites the write-up [${caching.sources.map((x) => x.href).join(", ")}]`);
+  const down = await say("What happens to the chat if Pinecone goes down?", []);
+  check(down.grounded && /keyword/i.test(down.answer), `"Pinecone down" answer describes the keyword fallback [${down.sources.map((x) => x.href).join(", ")}]: "${down.answer.slice(0, 80)}"`);
+  const fast = await say("How fast is a cached answer?", []);
+  // Every duration Miso states must be one the post states (lookup ~60/72 ms, 0.4 s, under 0.1 s, the 1.5 s
+  // timeout, ~2 s live answers, up to ~5 s with a cold start, 6.5 s cold start, 30 s 504s, 15–100 ms misses).
+  const numbers = (fast.answer.match(/\d+(\.\d+)?\s?-?\s?(ms|milliseconds?|s|seconds?)\b/gi) ?? []).map((n) => n.replace(/\s|-/g, "").replace(/milliseconds?/i, "ms").replace(/seconds?/i, "s"));
+  const POST_FIGURES = new Set(["60ms", "72ms", "0.4s", "0.1s", "1.5s", "2s", "2.0s", "5s", "6.5s", "30s", "15ms", "100ms", "1.6s", "1.8s"]);
+  check(fast.sources.some((x) => x.href === POST) && numbers.every((n) => POST_FIGURES.has(n)), `"How fast is a cached answer?" uses only the post's figures [${numbers.join(", ")}]`);
   const cat = await say("does he have a cat?", []);
   check(/miso|ragdoll/i.test(cat.answer), `knows about Miso: "${cat.answer.slice(0, 90)}"`);
 }

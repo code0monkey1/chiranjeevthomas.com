@@ -164,7 +164,10 @@ function searchTool() {
 type GroqMessage = { role: string; content?: string | null; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>; tool_call_id?: string };
 
 /** Pulls [chunk-id] citations out of the answer and keeps only ids that were actually retrieved. */
-export function finalize(raw: string, retrieved: Map<string, Chunk>): { answer: string; sources: Chunk[] } {
+export function finalize(rawText: string, retrieved: Map<string, Chunk>): { answer: string; sources: Chunk[] } {
+  // gpt-oss often writes ids with Unicode hyphens (U+2011 non-breaking hyphen etc.), e.g. [job‑grabbit].
+  // Normalise them first, or the citations are neither resolved nor stripped from the answer.
+  const raw = rawText.replace(HYPHENS, "-");
   const cited = Array.from(raw.matchAll(/\[([a-z0-9-]+)\]/g)).map((m) => m[1]);
   const valid = Array.from(new Set(cited)).map((id) => retrieved.get(id)).filter((c): c is Chunk => !!c);
   const answer = raw
@@ -179,6 +182,9 @@ export function finalize(raw: string, retrieved: Map<string, Chunk>): { answer: 
     .trim();
   return { answer, sources: valid };
 }
+
+/** Unicode hyphens and dashes models use in place of "-": U+2010–U+2015 and the minus sign U+2212. */
+export const HYPHENS = /[\u2010-\u2015\u2212]/g;
 
 /** True when an answer says the portfolio doesn't cover the question. Such answers show no sources and are never cached. */
 export const notCovered = (answer: string) =>
