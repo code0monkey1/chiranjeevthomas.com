@@ -80,7 +80,7 @@
 
 ## 8. Deploy preview checks
 
-- [ ] 8.1 On the Netlify deploy preview:
+- [x] 8.1 On the Netlify deploy preview:
   - follow the redirect
   - view the case study (figures, widgets, reduced motion)
   - view the cover
