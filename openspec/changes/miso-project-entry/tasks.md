@@ -7,13 +7,13 @@
 
 ## 2. Case study content
 
-- [ ] 2.1 Create `content/projects/miso-chat.md` with the front matter from design.md:
+- [x] 2.1 Create `content/projects/miso-chat.md` with the front matter from design.md:
   - title "Miso — the agent on this site", plus a headline, summary and description
   - status Live, date 2026-10-21, order 3
   - types `[ai-engineering]`, tags `[agents, rag, llm, observability]`
   - the stack list
   - `links.demo` = `https://www.chiranjeevthomas.com/#ask-miso`, `links.github` = the repo URL
-- [ ] 2.2 Move the post body into the page in the section order from design.md, keeping:
+- [x] 2.2 Move the post body into the page in the section order from design.md, keeping:
   - the post's headings
   - all four `<figure class="diagram">` blocks with their reduced-motion `<source>`s
   - the cache-hit screenshot
@@ -21,7 +21,7 @@
   - every table
 
   Change only self-references ("this post" becomes "this page" or "project"), including the closing "Ask Miso about this project" section.
-- [ ] 2.3 Write the build-story sections from the README and code:
+- [x] 2.3 Write the build-story sections from the README and code:
   - What Miso is
   - Conversation memory
   - Chunking, with the strategy table labelled as an earlier measurement
@@ -32,22 +32,22 @@
   - Guardrails merged into the failure table (rate limits, prompt injection, off-topic handling)
 
   Use only figures that are stated in the README, the post or the code.
-- [ ] 2.4 Bump `order` in `agentic-rag.md` to 4, in `agent-observability.md` to 5 and in `devreferral.md` to 6.
-- [ ] 2.5 Delete `content/posts/how-miso-answers.md`.
-- [ ] 2.6 Run `buildIndex()` (from a one-off `tsx` script in the scratchpad, or from the eval output) to get the new chunk count and full-embed token estimate. Update the "57 chunks, about 9K tokens" sentence and the matching tradeoff text to the new figures, keeping the old figures as "before". Log the source in `evidence/measurements.md`.
-- [ ] 2.7 Parity check: compare `evidence/post-before.md` with the new page and confirm that every heading, table row, figure, widget marker and number is present. Record the result in `evidence/parity.md`.
+- [x] 2.4 Bump `order` in `agentic-rag.md` to 4, in `agent-observability.md` to 5 and in `devreferral.md` to 6.
+- [x] 2.5 Delete `content/posts/how-miso-answers.md`.
+- [x] 2.6 Run `buildIndex()` (from a one-off `tsx` script in the scratchpad, or from the eval output) to get the new chunk count and full-embed token estimate. Update the "57 chunks, about 9K tokens" sentence and the matching tradeoff text to the new figures, keeping the old figures as "before". Log the source in `evidence/measurements.md`.
+- [x] 2.7 Parity check: compare `evidence/post-before.md` with the new page and confirm that every heading, table row, figure, widget marker and number is present. Record the result in `evidence/parity.md`.
 
 ## 3. Animated card cover
 
-- [ ] 3.1 Add `MisoChat` to `components/ProjectDiagram.tsx`, registered as `"miso-chat"`, with:
+- [x] 3.1 Add `MisoChat` to `components/ProjectDiagram.tsx`, registered as `"miso-chat"`, with:
   - the question bubble
   - the `search_portfolio` node
   - the meaning and keyword lanes (`.pd-grow`)
   - the "RRF top 4" pill
   - the answer bubble with a source chip and a `cache hit · 60 ms` chip
   - `role="img"` and a descriptive `aria-label`
-- [ ] 3.2 Add the `.pd-miso` styles to `app/globals.css`, using existing tokens only, and a phone tweak inside the existing ≤640px block if needed.
-- [ ] 3.3 Check the cover in light and dark themes, with reduced motion on (all steps visible and static), and at 360px, 768px and desktop widths (nothing clipped, no horizontal scroll).
+- [x] 3.2 Add the `.pd-miso` styles to `app/globals.css`, using existing tokens only, and a phone tweak inside the existing ≤640px block if needed.
+- [x] 3.3 Check the cover in light and dark themes, with reduced motion on (all steps visible and static), and at 360px, 768px and desktop widths (nothing clipped, no horizontal scroll).
 
 ## 4. Link from the chat
 

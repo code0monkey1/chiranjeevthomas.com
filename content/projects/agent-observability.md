@@ -5,7 +5,7 @@ summary: Every InvoiceChaser agent run is traced step by step, and a golden set 
 description: Per-step tracing of the InvoiceChaser agent and a golden-set evaluation suite that runs in CI, so prompt and model changes are checked before they ship. What gets traced, how cases are graded, the results and the bugs it found.
 status: Live
 date: 2026-11-07
-order: 4
+order: 5
 types: [ai-engineering]
 tags: [observability, agents]
 stack: [Python, LangChain middleware, Supabase, LLM-as-judge, GitHub Actions]

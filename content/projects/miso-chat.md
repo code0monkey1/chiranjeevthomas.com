@@ -1,16 +1,35 @@
 ---
-title: Making a free-tier RAG agent fast without serving stale answers
-description: How Miso, the agent on this site, answers in about two seconds on a free LLM tier, why I cache its answers per deploy instead of by content hash, and the vector-index bug that caching exposed.
-date: 2026-11-22
-tags: [ai-engineering, agents, rag, llm, observability]
-draft: false
+title: Miso — the agent on this site
+headline: A free-tier RAG agent that answers in two seconds, cites every claim and never serves a stale answer
+summary: Miso is the chat on this site. It searches by meaning and by keyword, answers only from what it found, shows its work in a live trace, and caches answers per deploy so a repeated question costs no LLM call.
+description: How I built Miso, the tool-calling RAG agent on this site. It covers hybrid search with rank fusion, grounded citations, chunking, a per-deploy answer cache, per-version vector namespaces, evals, the failure modes, and the decisions I measured along the way.
+status: Live
+date: 2026-10-21
+order: 3
+types: [ai-engineering]
+tags: [agents, rag, llm, observability]
+stack: [Next.js 15, Groq · gpt-oss-120b, Pinecone integrated inference, BM25, Netlify Blobs, Netlify]
+links:
+  demo: https://www.chiranjeevthomas.com/#ask-miso
+  github: https://github.com/code0monkey1/chiranjeevthomas.com
 ---
 
-Miso is the chat on this site: a tool-calling RAG agent that answers questions about my work and cites where each answer came from. This post is about the unglamorous part of running it: what each answer costs, how I cached answers without ever serving a stale one, and a deploy bug that caching made impossible to ignore.
+Miso is the chat on this site: a tool-calling RAG agent that answers questions about my work and cites where each answer came from. This page covers how I built it, and the unglamorous part of running it: what each answer costs, how I cached answers without ever serving a stale one, and a deploy bug that caching made impossible to ignore.
 
 - **Suggestion bubbles now answer in under 0.1 s instead of about 2 s.** Their answers are computed when the site is built and shipped in the page, so a click makes no request.
 - **A repeated first question costs no LLM call.** It comes from a cache that belongs to the deploy, so it can never outlive the content and code that produced it.
 - **The chat's vectors now belong to the deploy too.** A build in progress, a failed build or a rollback no longer leaves Miso searching content the pages don't show.
+
+## What Miso is
+
+- **Agentic retrieval:** the LLM decides *whether* to search, *what* to search for (it rewrites vague or follow-up questions into standalone queries), and *where*: it can scope a search to a single project. Up to 3 searches per question.
+- **Hybrid search:** every search runs a meaning search (Pinecone vector embeddings) and a keyword search (BM25), merged with reciprocal rank fusion.
+- **Grounded answers:** the model may cite only chunk ids it actually retrieved. Fabricated citations are dropped before the answer reaches the visitor.
+- **Always matches the page:** each version of the content gets its own Pinecone namespace, so a build in progress, a failed build or a rollback never leaves the chat searching content the site doesn't show.
+- **Degrades instead of breaking:** with no Pinecone it searches by keyword; with no LLM (or a Groq outage) it quotes the best passages; on a Groq rate limit it switches models.
+- **Observable:** the agent trace beside the chat shows each tool call, the meaning and keyword matches with their scores, the merged ranking, and which sources the answer used.
+
+It's built with Next.js 15 on Netlify, Groq's `gpt-oss-120b` for the agent, Pinecone integrated inference (`llama-text-embed-v2`) for meaning search and a local BM25 index for keywords.
 
 ## The constraint: two LLM calls a click on a free tier
 
@@ -51,6 +70,60 @@ Keyword search alone gets paraphrases wrong, which is why Miso runs both searche
 </picture>
 <figcaption>Rank fusion uses positions, not scores, because cosine similarity and BM25 live on different scales. <a href="/media/rank-fusion.svg">Open full size</a></figcaption>
 </figure>
+
+Each search returns its top 10. Every chunk then scores `Σ 1 / (60 + rank)` over the lists it appears in, and the top 4 go to the LLM. Chunks both searches agree on rise; noise from a single list sinks.
+
+## Follow-up questions without server sessions
+
+The server keeps no session state. Each request carries the last 8 messages (4 exchanges), and assistant turns include the titles of their sources. The system prompt tells the model to use that history to resolve follow-ups ("what stack did *it* use?" means InvoiceChaser after a question about InvoiceChaser), to rewrite them into standalone search queries, and to treat earlier answers as context, not as a source: every factual follow-up is searched again and cited. The history resets on reload or "new chat".
+
+## Chunking: one idea per chunk, never across projects
+
+Miso's search index is built from the same content files as the pages, so the chat learns about a new project on the next deploy.
+
+| Source | Chunks |
+|---|---|
+| Each project | A summary chunk (title, status, type, summary, stack, links) plus one chunk per `##` section of the case study |
+| Each blog post | One chunk per `##` section, titled "Post title: Section" |
+| Each job | One chunk per role |
+| Each skill group | One chunk with every skill and where it was used |
+| All projects | One overview chunk: every project with its type, status and one-line summary, so list questions ("which full-stack projects?") see them all at once |
+| Profile, contact, Miso the cat | One chunk each |
+
+**Why split on headings instead of fixed-size windows?** Fixed windows with overlap (for example LangChain's 500-character splitter) suit PDFs, where nothing marks where an idea ends. These files are written with `##` sections, and each section is already one idea. Splitting there never cuts an idea in half, so overlap would only duplicate text and blur which section matched. Each chunk is embedded as `Title. Text`, so a section called "The plan" still carries its project's name.
+
+**Every chunk belongs to exactly one file.** Each chunk records its source and, when it is about a project, that project's slug. Both are stored in Pinecone as metadata, which lets the agent run a search limited to one project, and the evals check that a project-scoped search never leaks into another project.
+
+When I first built the index (40 chunks, about 3,400 tokens), I measured the strategy against the alternatives on 9 recruiter-style questions on live Pinecone, including two "list all" questions:
+
+| Strategy | Right page in results | Coverage of list answers | Tokens sent to the LLM |
+|---|---|---|---|
+| **Sections + overview chunk (live)** | 8/9 | 0.89 | ~410 |
+| Sections only | 8/9 | 0.82 | ~380 |
+| One chunk per document | 8/9 | 0.76 | ~710 |
+| Small-to-big (match sections, return whole projects) | 8/9 | 0.80 | ~1,150 |
+
+Whole documents dilute each embedding and cost almost twice the tokens. Small-to-big costs three times as many for no gain. Returning 6 chunks instead of 4 added nothing once the overview chunk existed. The whole corpus would fit in one prompt, but Groq's free tier allows 8K tokens a minute, so sending ~400 retrieved tokens instead of ~3,400 is what lets several visitors chat at once.
+
+## Semantic search, and when to say "not covered"
+
+The Pinecone index uses integrated inference: the app sends text, and Pinecone embeds it with its hosted `llama-text-embed-v2` model, both when chunks are upserted and when a question is searched. No embedding model runs in the app, so the Netlify function only needs Pinecone's JavaScript client, with no model files or native binaries.
+
+Matches below **0.15** are dropped. Real matches on this index score about 0.2 to 0.35, while "What's his favourite pizza?" tops out at 0.12, so the chat says the topic isn't covered instead of quoting something unrelated. The floor doesn't apply to project-scoped searches.
+
+Keyword search still matters: exact names ("InvoiceChaser") and phrasings like "where does he work *now*" (where the matching text says "Present") are where BM25 is strongest. So every search runs both.
+
+## Decisions I measured
+
+- **Local embeddings → Pinecone integrated inference.** I first ran `bge-small-en-v1.5` locally with transformers.js. It worked, but it needed a native ONNX runtime plus 34 MB of model files inside the Netlify function, and it ranked the hard paraphrases below the cut. Pinecone's hosted model is stronger, adds nothing to the bundle, and is free at this scale.
+- **No reranker.** Pinecone's hosted `bge-reranker-v2-m3` scored nearly every candidate close to zero and moved "where does he work now?" to the contact chunk. It made results worse, and the free tier allows only 500 reranks a month.
+- **Fusion weights don't matter here.** Weighting meaning 1.5 to 3 times over keywords changed none of the test outcomes, so plain reciprocal rank fusion stays.
+- **Let the agent rewrite queries.** For "How does he keep tabs on what an AI is doing behind the scenes?", meaning search alone ranks the observability project 4th. The agent rewrites it to "monitor AI behind the scenes observability", scopes the search to that project, and answers from it.
+- **Groq model.** Groq's free Developer plan no longer serves Llama 3.3 70B, so the agent uses `gpt-oss-120b`, which supports tool calling, with reasoning effort set to low.
+
+## What you see while Miso works
+
+The chat opens from a one-line "Ask Miso" bar in a modal dialog, so it never pushes the projects down the page, and it stays mounted while closed, so reopening keeps the conversation. While an answer is being written, the chat card glows, Miso chases a mouse across the pending bubble with a live status line and timer, and the agent trace fills in step by step: each search, its meaning and keyword matches with their scores, the merged ranking, and the time to first words. Sources under each answer link to the page they came from.
 
 ## Why caching an agent's answers is harder than caching an API
 
@@ -114,7 +187,7 @@ The fix moves the vectors inside the boundary. Each build syncs into a namespace
 
 ## The tradeoff: Miso re-embeds everything when content changes
 
-Per-version namespaces cost something I chose to pay: a content change now embeds Miso's whole corpus: 57 chunks and about 9K tokens with this post included (43 chunks, about 6K tokens, before it) instead of only the changed chunks. Copying unchanged vectors forward would avoid that, but Pinecone's current API doesn't return the vectors it derives from text. A design with one immutable record per chunk version plus a per-deploy manifest would avoid it too, at the cost of tracking which records each kept deploy still references. At this size, the simple version wins. I'd switch if a full embed ever cost more than 10% of the monthly embedding allowance or added more than 10 seconds to a build.
+Per-version namespaces cost something I chose to pay: a content change now embeds Miso's whole corpus: 65 chunks and about 11.5K tokens with this case study included (43 chunks, about 6K tokens, before the Miso write-up existed) instead of only the changed chunks. Copying unchanged vectors forward would avoid that, but Pinecone's current API doesn't return the vectors it derives from text. A design with one immutable record per chunk version plus a per-deploy manifest would avoid it too, at the cost of tracking which records each kept deploy still references. At this size, the simple version wins. I'd switch if a full embed ever cost more than 10% of the monthly embedding allowance or added more than 10 seconds to a build.
 
 ## Pruning old vector namespaces, and a trap I nearly shipped
 
@@ -128,7 +201,7 @@ So each namespace carries two stamps. `syncedAt` only protects a namespace a bui
 
 | Situation | What Miso does |
 |---|---|
-| Groq rate limit | Retries on the smaller model. Those answers are shown but never cached. |
+| Groq rate limit | Retries on the smaller model (`gpt-oss-20b`), then waits the seconds Groq asks for and retries once. Those answers are shown but never cached. |
 | Groq down, or no key | Retrieval only: quotes the best passages from the same hybrid search. |
 | Pinecone down | Keyword search answers alone. Not cached, because meaning search didn't run. |
 | Answer cache slow or down | Gives up after 1.5 s and answers live. A failed write is logged and ignored. |
@@ -138,6 +211,20 @@ So each namespace carries two stamps. `syncedAt` only protects a namespace a bui
 | Rollback further back | Keyword search over its own content. Not cached. |
 | The model cites a chunk it never retrieved | The citation is dropped before the answer is shown. |
 | The model formats citations oddly (Unicode hyphens) | Normalised before parsing. An answer still showing markers is never cached. |
+| Off-topic request ("write a letter", "2 + 2") | A short, in-character redirect to questions about my work, never a bare refusal. |
+| Prompt injection in a question or in content | The system prompt treats both as data, not instructions. |
+| Abuse | 30 questions per visitor IP a day and 500 overall by default, using only the IP header Netlify sets, never the client-controlled `X-Forwarded-For`. Counters live in memory per function instance, so this is best effort. A cache hit doesn't count. |
+
+## How I test it: evals on every change
+
+`npm run eval:chat` runs offline checks on every change, plus live checks when the API keys are present:
+
+- **Retrieval:** each recruiter question must reach the expected page.
+- **Chunk boundaries:** unique ids, one source per chunk, and a project-scoped search never leaks into another project.
+- **Vector sync** (against an in-memory fake Pinecone): the first sync uploads everything, a re-sync sends nothing, and one edit plus one deletion sends exactly one upsert and one delete.
+- **Fusion:** a chunk found only by meaning still makes the top 4, and a Pinecone error falls back to keywords.
+- **Agent loop** (mocked model): tool calls are traced, fabricated citations are dropped, Markdown is flattened, and a 429 switches to the fallback model.
+- **Live, with keys:** paraphrases that keyword search misses must be found by meaning, the project filter must hold, off-topic questions retrieve nothing, answers must be grounded, a follow-up's "it" must resolve to the earlier project, an uncovered personal fact is declined instead of invented, and questions about how Miso works are searched and cited from this page.
 
 ## What it cost and what it bought
 
@@ -150,7 +237,7 @@ Here is what Miso's caching changed, measured before and after:
 | New first question | about 2.0 s | about 2.0 s, plus a cache lookup of 15 to 100 ms |
 | Build and deploy time | 65 s | 88 s: the 23 s buys precomputed bubbles |
 | Deploy with unchanged content | vectors re-checked in place | same namespace, 0 chunks embedded |
-| Deploy with changed content | only changed chunks embedded, into the live namespace | the whole corpus (about 9K tokens now) into a new namespace, live untouched until publish |
+| Deploy with changed content | only changed chunks embedded, into the live namespace | the whole corpus (about 11.5K tokens now) into a new namespace, live untouched until publish |
 
 All figures are as of November 2026, measured on this site's production deploys before and after the change.
 
@@ -164,6 +251,6 @@ None of this is shipped. It's where I'd take Miso if it had to serve a lot more 
 - **Hit-rate and cost dashboards,** so a drop in hit rate after a deploy is visible before the bill is.
 - **Eval-gated cache writes:** run a small golden set against an answer before it's allowed into the cache.
 
-## Ask Miso about this post
+## Ask Miso about this project
 
-Everything above is in Miso's search index too. Open the chat and ask "How does Miso cache answers?" or "What happens if Pinecone goes down?". Miso will answer from this post, cite it, and show you the trace, including whether the answer came from the cache.
+Everything above is in Miso's search index too. Open the chat and ask "How does Miso cache answers?" or "What happens if Pinecone goes down?". Miso will answer from this page, cite it, and show you the trace, including whether the answer came from the cache.

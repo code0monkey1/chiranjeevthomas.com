@@ -5,7 +5,7 @@ summary: Upload PDFs and chat with them. The model decides when to search, resul
 description: An agentic RAG assistant built with LangChain, Pinecone integrated embeddings, a bge reranker and Llama 3.3 70B on Groq — the model calls retrieval as a tool and cites its sources.
 status: Open source
 date: 2026-07-01
-order: 3
+order: 4
 types: [ai-engineering]
 tags: [rag, agents]
 stack: [LangChain, Pinecone, bge reranker, Groq · Llama 3.3 70B, Node · Express]
