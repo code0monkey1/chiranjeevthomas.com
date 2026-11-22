@@ -4,8 +4,11 @@
  */
 import type { AgentResult, Step } from "./agent";
 
-/** What both caches store: the agent's result, which model wrote it, and when. */
-export type CachedAnswer = { result: AgentResult; model: string; createdAt: string };
+/**
+ * What both caches store: the agent's result, which model wrote it, and when. `upgradeAfter` (ISO time) is
+ * set on fallback-model entries: no background upgrade to the main model is attempted before it.
+ */
+export type CachedAnswer = { result: AgentResult; model: string; createdAt: string; upgradeAfter?: string };
 
 /**
  * Two questions are "the same" when they differ only in letter case, spacing, curly vs straight
