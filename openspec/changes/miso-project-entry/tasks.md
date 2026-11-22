@@ -2,8 +2,8 @@
 
 ## 1. Prepare
 
-- [ ] 1.1 Archive `miso-chat-blog-post`, `cache-miso-answers` and `pin-vectors-to-deploy` (all tasks complete) so their specs land in `openspec/specs/`. In `openspec/specs/chat-self-knowledge/spec.md`, change "the write-up post" / "the write-up" to "the Miso case study (`/projects/miso-chat`)".
-- [ ] 1.2 Work only in the worktree `../chiranjeevthomas.com-miso` (branch `feat/miso-project-entry`, created from `main` at 92e10ec). Save a copy of the current `content/posts/how-miso-answers.md` to the change folder as `evidence/post-before.md`, to use for the parity check.
+- [x] 1.1 Archive `miso-chat-blog-post`, `cache-miso-answers` and `pin-vectors-to-deploy` (all tasks complete) so their specs land in `openspec/specs/`. In `openspec/specs/chat-self-knowledge/spec.md`, change "the write-up post" / "the write-up" to "the Miso case study (`/projects/miso-chat`)".
+- [x] 1.2 Work only in the worktree `../chiranjeevthomas.com-miso` (branch `feat/miso-project-entry`, created from `main` at 92e10ec). Save a copy of the current `content/posts/how-miso-answers.md` to the change folder as `evidence/post-before.md`, to use for the parity check.
 
 ## 2. Case study content
 
