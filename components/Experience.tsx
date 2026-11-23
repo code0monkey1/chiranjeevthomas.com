@@ -1,6 +1,23 @@
 import Link from "next/link";
 import { experience, formatMonth } from "@/lib/content";
 
+type Highlight = NonNullable<(typeof experience)[number]["highlights"]>[number];
+
+/** Three highlights are enough to scan; the rest sit behind a disclosure so nothing is lost. */
+const SHOWN = 3;
+
+function Highlights({ items }: { items: Highlight[] }) {
+  return items.map((h) => (
+    <li key={h.title}>
+      <span className={`impact${h.ai ? " ai" : ""}`}>{h.tag}</span>
+      <span>
+        <strong className="job-hl-title">{h.title}</strong> — {h.text}
+        {h.link && <> <Link href={h.link} className="case-link">Case study →</Link></>}
+      </span>
+    </li>
+  ));
+}
+
 export function Experience() {
   return (
     <>
@@ -13,7 +30,7 @@ export function Experience() {
         {experience.map((j) => (
           <li key={j.company} className={`job lift${j.highlights ? "" : " small"}`}>
             <div className="job-meta">
-              <span className="mono" style={{ fontSize: 13, color: "var(--muted)" }}>
+              <span className="mono job-date">
                 {formatMonth(j.start)} — {formatMonth(j.end)}
               </span>
               <h3>{j.company}</h3>
@@ -24,17 +41,19 @@ export function Experience() {
               )}
             </div>
             {j.highlights ? (
-              <ul className="job-hl">
-                {j.highlights.map((h) => (
-                  <li key={h.title}>
-                    <span className={`impact${h.ai ? " ai" : ""}`}>{h.tag}</span>
-                    <span>
-                      <strong style={{ fontWeight: 600, color: "var(--ink)" }}>{h.title}</strong> — {h.text}
-                      {h.link && <> <Link href={h.link} style={{ color: "var(--sienna)" }}>Case study →</Link></>}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <div className="job-hl-wrap">
+                <ul className="job-hl">
+                  <Highlights items={j.highlights.slice(0, SHOWN)} />
+                </ul>
+                {j.highlights.length > SHOWN && (
+                  <details className="job-more">
+                    <summary>{j.highlights.length - SHOWN} more {j.highlights.length - SHOWN === 1 ? "highlight" : "highlights"}</summary>
+                    <ul className="job-hl">
+                      <Highlights items={j.highlights.slice(SHOWN)} />
+                    </ul>
+                  </details>
+                )}
+              </div>
             ) : (
               <p className="sum">{j.summary}</p>
             )}

@@ -10,7 +10,7 @@
     - tag: AI · LLM
       ai: true
       title: Shipped LLM conversational search to production
-      text: natural language translated into Elasticsearch queries, so non-technical users can run complex product searches and the catalogue is far easier to discover.
+      text: natural language translated into Elasticsearch queries on a platform with 14,000+ users, so non-technical users can run complex product searches and the catalogue is far easier to discover.
       link: /projects/grabbit-llm-search
     - tag: B2C → B2B
       title: Led the platform’s move from a B2C delivery app to a hybrid B2C + B2B marketplace
