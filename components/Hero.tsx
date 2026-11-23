@@ -11,7 +11,7 @@ export function Hero() {
           <div className="hero-head">
             <h1 id="hero-title" className="hero-title">
               <span className="hero-name">{site.name}</span>
-              <span className="hero-role">Senior full-stack engineer building agentic AI</span>
+              <span className="hero-role">Senior full-stack engineer, agentic applications</span>
             </h1>
             <p className="hero-status">
               <strong><span className="live-dot" aria-hidden="true" />{site.availability}</strong>

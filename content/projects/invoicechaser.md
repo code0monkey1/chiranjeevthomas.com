@@ -6,7 +6,7 @@ description: How I built InvoiceChaser, a LangGraph and LangChain agent that esc
 status: Live
 date: 2026-09-01
 featured: true
-order: 2
+order: 1
 types: [ai-engineering, full-stack]
 tags: [agents, human-in-the-loop, mcp, langgraph]
 stack: [LangChain, LangGraph, Groq · Llama 3.3 70B, FastAPI, React 19, MCP, Tavily, Vercel]

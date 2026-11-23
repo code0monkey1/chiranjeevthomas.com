@@ -6,7 +6,7 @@ description: How I shipped LLM-powered conversational search at Grabbit, transla
 status: At Grabbit
 date: 2026-03-01
 featured: true
-order: 1
+order: 3
 types: [ai-engineering, full-stack]
 tags: [llm, search]
 stack: [LLM, Elasticsearch, Spring Boot, React Native, AWS]

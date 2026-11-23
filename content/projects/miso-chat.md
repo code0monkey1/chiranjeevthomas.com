@@ -5,7 +5,7 @@ summary: Miso is the chat on this site. It searches by meaning and by keyword, a
 description: How I built Miso, the tool-calling RAG agent on this site. It covers hybrid search with rank fusion, grounded citations, chunking, a per-deploy answer cache, per-version vector namespaces, evals, the failure modes, and the decisions I measured along the way.
 status: Live
 date: 2026-10-21
-order: 3
+order: 4
 types: [ai-engineering]
 tags: [agents, rag, llm, observability]
 stack: [Next.js 15, Groq · gpt-oss-120b, Pinecone integrated inference, BM25, Netlify Blobs, Netlify]

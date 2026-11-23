@@ -1,11 +1,11 @@
 ---
 title: Agent observability & evals for InvoiceChaser
 headline: Tracing and evaluating an agent before every prompt change
-summary: Every InvoiceChaser agent run is traced step by step, and a golden set of 18 disputes grades tool choice, approvals and tone on every prompt or model change. Building it found four real bugs.
+summary: Every InvoiceChaser agent run is traced step by step, and a golden set of 18 disputes grades tool choice, approvals and tone in CI on every prompt or model change. Building it found four real bugs.
 description: Per-step tracing of the InvoiceChaser agent and a golden-set evaluation suite that runs in CI, so prompt and model changes are checked before they ship. What gets traced, how cases are graded, the results and the bugs it found.
 status: Live
 date: 2026-11-07
-order: 5
+order: 2
 types: [ai-engineering]
 tags: [observability, agents]
 stack: [Python, LangChain middleware, Supabase, LLM-as-judge, GitHub Actions]
