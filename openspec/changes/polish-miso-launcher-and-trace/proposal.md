@@ -4,7 +4,7 @@
 
 Recruiters can overlook the Ask Miso launcher on the homepage. Inside the chat, the explanation beneath Agent Trace competes with the trace itself and repeats the purpose of the case-study link in the header.
 
-The homepage also needs a brief first-visit preview of Miso and an email action that opens in browsers without an operating-system mail handler.
+The homepage also needs a brief first-visit preview of Miso and an email action that uses the visitor’s default mail client.
 
 ## What Changes
 
@@ -13,7 +13,7 @@ The homepage also needs a brief first-visit preview of Miso and an email action 
 - Remove the explanatory paragraph and duplicate case-study link from the trace pane. Keep the chat header’s “How I built Miso, and why” link.
 
 - On a first homepage visit, unfold a smaller preview of the chat and fold it back to the launcher.
-- Open both Email me buttons in a new Gmail compose tab with the portfolio address filled in.
+- Open both Email me buttons in the visitor’s default mail client with the portfolio address filled in.
 
 ## Capabilities
 

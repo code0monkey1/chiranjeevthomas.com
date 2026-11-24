@@ -31,7 +31,6 @@ const fresh = <T>(load: () => T) => {
 };
 export const getSite = fresh(() => SiteSchema.parse(yaml.load(read("site.yaml"))));
 export const site: Site = getSite();
-export const emailComposeHref = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(site.email)}`;
 
 /** Drop a résumé at public/resume.pdf and the hero and contact section link to it. */
 export const resumeHref = fs.existsSync(path.join(process.cwd(), "public", "resume.pdf")) ? "/resume.pdf" : null;

@@ -17,7 +17,7 @@
 ## 4. First-visit preview and contact
 
 - [x] 4.1 Add the compact preview. Verify unfold and collapse, first-visit persistence, reduced motion, direct chat links, and opening the real dialog during the preview on desktop and mobile.
-- [x] 4.2 Repair both Email me links. Verify they open a new tab aimed at Gmail compose with the correct recipient and that the footer still offers the native mail link.
+- [x] 4.2 Verify both Email me buttons and the footer use native mail links addressed to the portfolio email.
 
 ## Workflow follow-up
 
