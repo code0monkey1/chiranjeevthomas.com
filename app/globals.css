@@ -693,12 +693,13 @@ html.dialog-open { overflow: hidden; }
   .nav-links .nav-resume { margin: 8px 0 0; padding-left: 8px; border-top: 1px solid var(--line); border-radius: 0; }
   .nav-links .nav-resume::before { display: none; }
   .nav-links .nav-contact { margin: 8px 0 0; text-align: center; }
-  .chat-bar { flex-wrap: nowrap; padding: 10px 12px; }
+  .chat-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 8px; padding: 10px 12px; }
+  .chat-title { gap: 8px; }
   .chat-title small { display: none; }
   .chat-built { font-size: 11px; }
   .chat-built-why { display: none; }
   .chat-title strong { font-size: 15px; line-height: 1.3; }
-  .mode-pill { white-space: nowrap; }
+  .mode-pill { grid-area: 2 / 1; justify-self: start; white-space: nowrap; }
   .starters { padding-left: 0; }
   /* Diagrams need more height than a 16:9 frame gives on a phone. */
   .project-media:has(.pd) { aspect-ratio: 4 / 3; }
