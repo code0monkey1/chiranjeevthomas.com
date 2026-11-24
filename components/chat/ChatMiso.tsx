@@ -311,16 +311,6 @@ export function ChatMiso({ onClose }: { onClose?: () => void } = {}) {
               ))}
             </ol>
           )}
-          <p className="how">
-            <strong style={{ color: "var(--ink)" }}>How it works:</strong>{" "}
-            {mode === "demo" ? (
-              <>no LLM is connected right now, so your question goes straight to <code className="mono">search_portfolio</code>: a meaning search (Pinecone vector embeddings) and a keyword search, merged into one ranking. Miso quotes the best passages and links where each came from.</>
-            ) : (
-              <>an LLM (GPT-OSS 120B on Groq) decides when to call <code className="mono">search_portfolio</code>, up to 3 times, optionally limited to one project. Each call runs a meaning search (Pinecone vector embeddings) and a keyword search and merges the two rankings. The LLM answers only from those passages and cites them.</>
-            )}{" "}
-            The suggested questions were answered when this version of the site was built, so they appear instantly; a first question someone already asked since the last deploy comes from a cache. The trace says when an answer is cached.{" "}
-            <a href="/projects/miso-chat">Read how it was built and the decisions behind it →</a>
-          </p>
         </aside>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { ChatMiso } from "./ChatMiso";
 import { RagdollCat } from "./RagdollCat";
 
 const HASH = "#ask-miso";
+const PREVIEW_KEY = "miso-intro-seen";
 
 /**
  * A one-line "Ask Miso" bar that opens the full chat in a modal dialog, so the chat never pushes Projects down.
@@ -11,12 +12,15 @@ const HASH = "#ask-miso";
  */
 export function MisoLauncher() {
   const [open, setOpen] = useState(false);
+  const [preview, setPreview] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const launcher = useRef<HTMLButtonElement>(null);
 
   const show = useCallback(() => {
     const d = dialog.current;
     if (!d || d.open) return;
+    setPreview(false);
+    d.inert = false;
     d.showModal();
     setOpen(true);
     document.documentElement.classList.add("dialog-open");
@@ -46,9 +50,46 @@ export function MisoLauncher() {
     };
   }, [show]);
 
+  useEffect(() => {
+    const button = launcher.current;
+    const panel = dialog.current;
+    if (!button || !panel) return;
+
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const firstView = new IntersectionObserver(([entry], observer) => {
+      if (entry.intersectionRatio < 0.5) return;
+      observer.disconnect();
+      button.dataset.motion = "true";
+      if (panel.open || location.hash || motion.matches) return;
+      try {
+        if (localStorage.getItem(PREVIEW_KEY)) return;
+        localStorage.setItem(PREVIEW_KEY, "1");
+      } catch {
+        // Skip the intro if the browser cannot remember that it was shown.
+        return;
+      }
+
+      const bounds = button.getBoundingClientRect();
+      const x = bounds.left + bounds.width / 2;
+      const y = bounds.top + bounds.height / 2;
+      panel.style.setProperty("--miso-preview-x", `${x - innerWidth / 2}px`);
+      panel.style.setProperty("--miso-preview-y", `${y - innerHeight / 2}px`);
+      setPreview(true);
+    }, { threshold: 0.5 });
+    firstView.observe(button);
+
+    const respectMotionChange = () => { if (motion.matches) setPreview(false); };
+    motion.addEventListener("change", respectMotionChange);
+    return () => {
+      firstView.disconnect();
+      motion.removeEventListener("change", respectMotionChange);
+    };
+  }, []);
+
   return (
     <div id="ask-miso" className="miso-launch">
       <button ref={launcher} type="button" className="miso-launcher" aria-haspopup="dialog" aria-expanded={open} aria-controls="miso-dialog" onClick={show}>
+        <span className="miso-launcher-orb" aria-hidden="true" />
         <span className="miso-launcher-cat" aria-hidden="true"><RagdollCat still size={40} /></span>
         <span className="miso-launcher-text">
           <strong>Ask Miso</strong>
@@ -57,7 +98,17 @@ export function MisoLauncher() {
         <span className="miso-launcher-go" aria-hidden="true">↗</span>
       </button>
       {/* A click that lands on the dialog itself (not the chat inside it) is a click on the backdrop. */}
-      <dialog ref={dialog} id="miso-dialog" className="miso-dialog" aria-label="Ask Miso" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+      <dialog
+        ref={dialog}
+        id="miso-dialog"
+        className="miso-dialog"
+        aria-label="Ask Miso"
+        aria-hidden={preview || undefined}
+        data-preview={preview || undefined}
+        inert={preview}
+        onAnimationEnd={(e) => { if (e.target === e.currentTarget && e.animationName === "miso-dialog-preview") setPreview(false); }}
+        onClick={(e) => { if (e.target === e.currentTarget) close(); }}
+      >
         <ChatMiso onClose={close} />
       </dialog>
     </div>
