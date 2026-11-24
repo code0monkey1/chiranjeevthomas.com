@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { site } from "@/lib/content";
+import { emailComposeHref, site } from "@/lib/content";
 import { GitHubIcon, LinkedInIcon, MailIcon } from "./Icons";
 import { MisoLauncher } from "./chat/MisoLauncher";
 
@@ -21,7 +21,7 @@ export function Hero() {
           <div className="hero-body">
             <p className="intro">{site.intro}</p>
             <div className="hero-actions">
-              <a className="btn primary lg" href={`mailto:${site.email}`}><MailIcon />Email me</a>
+              <a className="btn primary lg" href={emailComposeHref} target="_blank" rel="noopener noreferrer" aria-label="Email me (opens Gmail in a new tab)"><MailIcon />Email me</a>
               <a className="hero-link" href={site.socials.github} aria-label="GitHub" title="GitHub"><GitHubIcon /></a>
               <a className="hero-link" href={site.socials.linkedin} aria-label="LinkedIn" title="LinkedIn"><LinkedInIcon /></a>
             </div>

@@ -209,6 +209,24 @@ li.badge { display: inline-flex; align-items: center; }
 .miso-dialog { width: min(1080px, calc(100% - 48px)); max-width: none; max-height: calc(100dvh - 48px); margin: auto; padding: 0; border: 0; border-radius: 20px; background: transparent; overflow: auto; overscroll-behavior: contain; }
 .miso-dialog::backdrop { background: rgba(12, 10, 9, .45); }
 .miso-dialog[open] { animation: pop .3s cubic-bezier(.2,.7,.2,1) both; }
+.miso-dialog[data-preview]:not([open]) {
+  --miso-preview-scale: .8;
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  height: fit-content;
+  max-height: calc(100dvh - 64px);
+  pointer-events: none;
+  animation: miso-dialog-preview 3.5s ease-in-out .6s both;
+}
+@keyframes miso-dialog-preview {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(var(--miso-preview-x), var(--miso-preview-y)) perspective(900px) rotateX(-58deg) scale(.24);
+  }
+  20%, 77% { opacity: 1; transform: translate(0, 0) perspective(900px) rotateX(0deg) scale(var(--miso-preview-scale)); }
+}
 .miso-dialog .chat { box-shadow: 0 30px 80px rgba(12,10,9,.35); }
 /* The page behind the dialog keeps its scroll position and does not scroll underneath. */
 html.dialog-open { overflow: hidden; }
@@ -234,6 +252,7 @@ html.dialog-open { overflow: hidden; }
   .miso-launcher-go { flex-basis: 36px; height: 36px; font-size: 16px; }
   /* On phones the dialog takes the whole screen. */
   .miso-dialog { width: 100%; max-height: none; height: 100dvh; border-radius: 0; }
+  .miso-dialog[data-preview]:not([open]) { --miso-preview-scale: .86; width: calc(100% - 24px); border-radius: 16px; }
   .miso-dialog .chat { min-height: 100%; border-radius: 0; border: 0; }
 }
 
@@ -696,6 +715,7 @@ html.dialog-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   /* No running: park the pair mid-track so the scene still reads. */
+  .miso-dialog[data-preview]:not([open]) { display: none; }
   .chase-pair { transform: translateX(70px); }
   /* Diagram steps start hidden and fade in by animation; show them statically. */
   .pd-step { opacity: 1; transform: none; }

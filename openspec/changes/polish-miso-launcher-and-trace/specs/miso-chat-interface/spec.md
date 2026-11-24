@@ -38,3 +38,22 @@ The chat’s right pane SHALL contain only Agent Trace content. The “How I bui
 
 - **WHEN** a visitor submits a question and views Agent Trace, using the trace toggle on narrow screens
 - **THEN** the pane shows the trace status and any available steps, and the case-study link remains available in the header
+
+### Requirement: First visitors see a compact preview of the chat
+
+The homepage SHALL show a one-time visual preview that unfolds from the launcher, briefly shows the chat as a card smaller than the viewport, then folds back. The preview SHALL leave the page interactive and SHALL be skipped for returning browsers and visitors who prefer reduced motion.
+
+#### Scenario: First visit with motion enabled
+
+- **WHEN** a visitor first lands on the homepage with motion and browser storage available
+- **THEN** a compact preview of the actual chat unfolds and folds back once without taking keyboard focus
+
+#### Scenario: Opening Miso during the preview
+
+- **WHEN** a visitor activates Ask Miso during the preview
+- **THEN** the preview gives way to the regular interactive dialog
+
+#### Scenario: Returning, reduced motion, or a direct chat link
+
+- **WHEN** a visitor returns after seeing the preview, prefers reduced motion, or arrives via the direct chat link
+- **THEN** the automatic preview is skipped and the regular chat remains available

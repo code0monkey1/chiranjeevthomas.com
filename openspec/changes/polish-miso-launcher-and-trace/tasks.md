@@ -12,9 +12,16 @@
 
 ## 3. Integration
 
-- [ ] 3.1 Run TypeScript checks and review the diff before opening or updating the GitHub PR. Verify both UI changes together on the Netlify deploy preview.
+- [x] 3.1 Run TypeScript checks and review the diff before opening or updating the GitHub PR. Verify both UI changes together on the Netlify deploy preview.
+
+## 4. First-visit preview and contact
+
+- [x] 4.1 Add the compact preview. Verify unfold and collapse, first-visit persistence, reduced motion, direct chat links, and opening the real dialog during the preview on desktop and mobile.
+- [x] 4.2 Repair both Email me links. Verify they open a new tab aimed at Gmail compose with the correct recipient and that the footer still offers the native mail link.
 
 ## Workflow follow-up
+
+- Verify the first-visit preview and email links on the updated Netlify deploy preview.
 
 - Merge the PR into `main` after its checks pass.
 - Confirm that Netlify publishes the merge to production, then verify the launcher and trace on the live site.
