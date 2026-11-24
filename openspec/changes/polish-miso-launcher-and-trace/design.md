@@ -14,7 +14,7 @@ Keep the motion local to the launcher, preserve the button’s dimensions and fo
 - Use the existing cat illustration and animate its wrapper with a small lean toward the text. Time the nudge with the orbit, let the idle sequence settle after a few seconds, and preserve a static accent under the site’s reduced-motion rule.
 - Remove the explanatory footer and any CSS used only by that footer. Keep the existing trace body, mobile toggle, and header link in their current markup roles.
 
-- Show the existing dialog markup as an inert visual preview and animate it from the launcher into a smaller centered card and back. Record the first run in local storage and skip the animation for reduced motion, hash navigation, or storage restrictions. The button opens the standard modal immediately, including during the preview.
+- Show the existing dialog markup as an inert visual preview and animate it from the launcher into a smaller centered card and back. Start the animation when the launcher first comes into view so it originates from the button even on short phones. Record the first run in local storage and skip the animation for reduced motion, hash navigation, or storage restrictions. The button opens the standard modal immediately, including during the preview.
 - Build both Email me links from the configured site email. Use Gmail web compose for the two primary buttons and preserve the footer’s native email link.
 
 ## Risks / Trade-offs

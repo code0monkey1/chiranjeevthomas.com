@@ -12,7 +12,7 @@ The homepage SHALL provide a clearly labeled Ask Miso button with a glowing oran
 
 #### Scenario: Seeing the launcher on a phone or desktop
 
-- **WHEN** a visitor views the homepage with motion enabled
+- **WHEN** the homepage launcher first comes into view with motion enabled
 - **THEN** a glowing orange bubble moves around the button, Miso briefly leans toward “Ask Miso,” and the launcher fits within the viewport
 
 #### Scenario: Reduced motion
@@ -45,7 +45,7 @@ The homepage SHALL show a one-time visual preview that unfolds from the launcher
 
 #### Scenario: First visit with motion enabled
 
-- **WHEN** a visitor first lands on the homepage with motion and browser storage available
+- **WHEN** the launcher first comes into view on a visitor’s first homepage visit with motion and browser storage available
 - **THEN** a compact preview of the actual chat unfolds and folds back once without taking keyboard focus
 
 #### Scenario: Opening Miso during the preview

@@ -190,13 +190,14 @@ li.badge { display: inline-flex; align-items: center; }
     translate: none;
     offset-path: inset(0 round var(--radius));
     offset-rotate: 0deg;
-    animation: miso-launcher-orbit 4.6s linear .2s;
   }
+  .miso-launcher[data-motion] .miso-launcher-orb { animation: miso-launcher-orbit 4.6s linear .2s; }
 }
 @keyframes miso-launcher-orbit {
   to { offset-distance: 100%; }
 }
-.miso-launcher-cat { flex: 0 0 40px; display: grid; place-items: center; animation: miso-launcher-nudge .9s ease-in-out 1.15s; }
+.miso-launcher-cat { flex: 0 0 40px; display: grid; place-items: center; }
+.miso-launcher[data-motion] .miso-launcher-cat { animation: miso-launcher-nudge .9s ease-in-out 1.15s; }
 @keyframes miso-launcher-nudge {
   0%, 100% { transform: none; }
   45%, 60% { transform: translateX(5px) rotate(9deg); }
@@ -715,8 +716,8 @@ html.dialog-open { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-  /* No running: park the pair mid-track so the scene still reads. */
   .miso-dialog[data-preview]:not([open]) { display: none; }
+  /* No running: park the pair mid-track so the scene still reads. */
   .chase-pair { transform: translateX(70px); }
   /* Diagram steps start hidden and fade in by animation; show them statically. */
   .pd-step { opacity: 1; transform: none; }

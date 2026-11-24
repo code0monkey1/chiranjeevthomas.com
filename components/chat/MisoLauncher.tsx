@@ -51,11 +51,16 @@ export function MisoLauncher() {
   }, [show]);
 
   useEffect(() => {
+    const button = launcher.current;
+    const panel = dialog.current;
+    if (!button || !panel) return;
+
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const frame = requestAnimationFrame(() => {
-      const button = launcher.current;
-      const panel = dialog.current;
-      if (!button || !panel || panel.open || location.hash || motion.matches) return;
+    const firstView = new IntersectionObserver(([entry], observer) => {
+      if (entry.intersectionRatio < 0.5) return;
+      observer.disconnect();
+      button.dataset.motion = "true";
+      if (panel.open || location.hash || motion.matches) return;
       try {
         if (localStorage.getItem(PREVIEW_KEY)) return;
         localStorage.setItem(PREVIEW_KEY, "1");
@@ -66,15 +71,17 @@ export function MisoLauncher() {
 
       const bounds = button.getBoundingClientRect();
       const x = bounds.left + bounds.width / 2;
-      const y = Math.min(innerHeight - 40, Math.max(40, bounds.top + bounds.height / 2));
+      const y = bounds.top + bounds.height / 2;
       panel.style.setProperty("--miso-preview-x", `${x - innerWidth / 2}px`);
       panel.style.setProperty("--miso-preview-y", `${y - innerHeight / 2}px`);
       setPreview(true);
-    });
+    }, { threshold: 0.5 });
+    firstView.observe(button);
+
     const respectMotionChange = () => { if (motion.matches) setPreview(false); };
     motion.addEventListener("change", respectMotionChange);
     return () => {
-      cancelAnimationFrame(frame);
+      firstView.disconnect();
       motion.removeEventListener("change", respectMotionChange);
     };
   }, []);
