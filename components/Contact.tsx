@@ -1,4 +1,4 @@
-import { emailComposeHref, resumeHref, site } from "@/lib/content";
+import { resumeHref, site } from "@/lib/content";
 import { LinkedInIcon, MailIcon } from "./Icons";
 
 /** Closing call to action: the page ends with how to reach Chiranjeev, not with the oldest job. */
@@ -14,7 +14,7 @@ export function Contact() {
           </p>
         </div>
         <div className="cta-row">
-          <a className="btn primary lg" href={emailComposeHref} target="_blank" rel="noopener noreferrer" aria-label="Email me (opens Gmail in a new tab)"><MailIcon />Email me</a>
+          <a className="btn primary lg" href={`mailto:${site.email}`}><MailIcon />Email me</a>
           {resumeHref && <a className="btn lg" href={resumeHref} download>Download résumé</a>}
           <a className="btn lg" href={site.socials.linkedin}><LinkedInIcon />LinkedIn</a>
         </div>
