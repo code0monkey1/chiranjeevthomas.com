@@ -49,6 +49,7 @@ export function MisoLauncher() {
   return (
     <div id="ask-miso" className="miso-launch">
       <button ref={launcher} type="button" className="miso-launcher" aria-haspopup="dialog" aria-expanded={open} aria-controls="miso-dialog" onClick={show}>
+        <span className="miso-launcher-orb" aria-hidden="true" />
         <span className="miso-launcher-cat" aria-hidden="true"><RagdollCat still size={40} /></span>
         <span className="miso-launcher-text">
           <strong>Ask Miso</strong>

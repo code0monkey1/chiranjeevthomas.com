@@ -169,9 +169,38 @@ li.badge { display: inline-flex; align-items: center; }
 .hero + .section { padding-top: 56px; }
 
 /* Ask Miso: one bar in the hero; the full chat opens in a modal dialog over the page. */
-.miso-launcher { cursor: pointer; width: 100%; min-height: 72px; display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-tint); text-align: left; transition: border-color .2s; }
+.miso-launcher { position: relative; cursor: pointer; width: 100%; min-height: 72px; display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-tint); text-align: left; transition: border-color .2s; }
 .miso-launcher:hover { border-color: var(--sand); }
-.miso-launcher-cat { flex: 0 0 40px; display: grid; place-items: center; }
+.miso-launcher:focus-visible { border-radius: var(--radius); }
+.miso-launcher-orb {
+  position: absolute;
+  top: 0;
+  left: var(--radius);
+  width: 8px;
+  height: 8px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: #ff9c4b;
+  box-shadow: 0 0 11px 2px rgba(255, 122, 34, .65);
+  pointer-events: none;
+}
+@supports (offset-path: inset(0 round 1px)) {
+  .miso-launcher-orb {
+    left: 0;
+    translate: none;
+    offset-path: inset(0 round var(--radius));
+    offset-rotate: 0deg;
+    animation: miso-launcher-orbit 4.6s linear .2s;
+  }
+}
+@keyframes miso-launcher-orbit {
+  to { offset-distance: 100%; }
+}
+.miso-launcher-cat { flex: 0 0 40px; display: grid; place-items: center; animation: miso-launcher-nudge .9s ease-in-out 1.15s; }
+@keyframes miso-launcher-nudge {
+  0%, 100% { transform: none; }
+  45%, 60% { transform: translateX(5px) rotate(9deg); }
+}
 .miso-launcher-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .miso-launcher-text strong { font-size: 17px; font-weight: 600; }
 .miso-launcher-text span { font-size: 15px; line-height: 1.4; color: var(--muted); }
@@ -458,7 +487,6 @@ html.dialog-open { overflow: hidden; }
 .trace li { flex: 0 0 auto; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); animation: pop .45s cubic-bezier(.2,.7,.2,1) both; }
 .trace li b { display: block; font-weight: 600; }
 .trace li span.d { color: var(--muted); overflow-wrap: anywhere; }
-.trace .how { margin-top: auto; border-top: 1px solid var(--line); padding-top: 12px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
 /* Side by side, the chat column sets the height; the trace never stretches it and scrolls inside instead. */
 @media (min-width: 920px) { .trace { contain: size; } .trace ol { max-height: none; } }
 .wish-glow { position: absolute; inset: 0; border-radius: 20px; pointer-events: none; z-index: 2; animation: wishglow 2.6s ease-out forwards; }
